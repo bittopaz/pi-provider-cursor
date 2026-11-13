@@ -8,6 +8,7 @@ import type { CursorModelCatalogProvenance } from "../src/model-discovery.js";
 import { createPiHarness, makeAssistantMessage, makeModel, collectEvents, createExtensionTestContext } from "./helpers/pi-harness.js";
 import type { createCursorLazyStream } from "../src/cursor-provider-lazy.js";
 import { registerCursorProviderBinding, type CursorServedCatalogProvenance } from "../src/cursor-provider-binding.js";
+import { completeCursorSideRequest } from "../src/cursor-side-request.js";
 import { registerCursorNativeToolDisplayState } from "../src/cursor-native-tool-display-state.js";
 import { registerCursorSessionScope } from "../src/cursor-session-scope.js";
 import { captureCursorRequestProjection, resolveCursorRequestProvenance } from "../src/cursor-request-provenance.js";
@@ -346,5 +347,66 @@ describe("provider header receipts and operation membership", () => {
 			if (session) { await session.abort(); await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" }); session.dispose(); }
 			await rm(root, { recursive: true, force: true });
 		}
+	});
+});
+
+describe("tool-free side requests", () => {
+	async function started() {
+		const pi = createPiHarness();
+		registerCursorSessionScope(pi);
+		registerCursorNativeToolDisplayState(pi);
+		registerCursorProviderBinding(pi)([], () => {});
+		onTestFinished(async () => { await pi.runSessionShutdown({ reason: "quit" }); });
+		const ctx = createExtensionTestContext({ cwd: "/tmp/provenance-owner" });
+		await pi.invokeEventWithContext("session_start", { type: "session_start", reason: "startup" }, ctx);
+		return pi;
+	}
+
+	it("sends the prompt as this session's summary and leaves the next ordinary request alone", async () => {
+		const pi = await started();
+		const signal = new AbortController().signal;
+		const result = await completeCursorSideRequest({
+			model: makeModel(),
+			systemPrompt: "Answer briefly.",
+			prompt: "17 + 25",
+			signal,
+			maxTokens: 80,
+			reasoning: "minimal",
+		});
+		expect(result).toEqual({ text: "Done", stopReason: "stop", errorMessage: undefined });
+		const call = vi.mocked(streamCursor).mock.calls.at(-1);
+		expect(call?.[1]).toMatchObject({
+			systemPrompt: "Answer briefly.",
+			messages: [expect.objectContaining({ role: "user", content: "17 + 25" })],
+		});
+		expect(call?.[2]).toMatchObject({ maxTokens: 80, reasoning: "minimal", maxRetries: 0, signal });
+		expect(call?.[3]).toMatchObject({ request: { purpose: "compaction" } });
+		const headers = {};
+		await pi.invokeEventWithContext("before_provider_headers", { type: "before_provider_headers", headers }, createExtensionTestContext({ cwd: "/tmp/provenance-owner" }));
+		const stream = pi._registered[0]!.config.streamSimple! as ReturnType<typeof createCursorLazyStream>;
+		await collectEvents(stream(makeModel(), { messages: [] }, { headers, signal: new AbortController().signal }));
+		expect(vi.mocked(streamCursor).mock.calls.at(-1)?.[3]).toMatchObject({ request: { purpose: "normal" } });
+	});
+
+	it("returns aborted without sending when the side request is already cancelled", async () => {
+		await started();
+		vi.mocked(streamCursor).mockClear();
+		await expect(completeCursorSideRequest({
+			model: makeModel(),
+			prompt: "hello",
+			signal: AbortSignal.abort(),
+		})).resolves.toEqual({ text: "", stopReason: "aborted" });
+		expect(vi.mocked(streamCursor)).not.toHaveBeenCalled();
+	});
+
+	it("rejects a side request before the session starts and after it shuts down", async () => {
+		const pi = createPiHarness();
+		registerCursorSessionScope(pi);
+		registerCursorNativeToolDisplayState(pi);
+		registerCursorProviderBinding(pi)([], () => {});
+		expect(() => completeCursorSideRequest({ model: makeModel(), prompt: "hello" })).toThrow(/active Cursor session/);
+		await pi.invokeEventWithContext("session_start", { type: "session_start", reason: "startup" }, createExtensionTestContext({ cwd: "/tmp/provenance-owner" }));
+		await pi.runSessionShutdown({ reason: "quit" });
+		expect(() => completeCursorSideRequest({ model: makeModel(), prompt: "hello" })).toThrow(/active Cursor session/);
 	});
 });

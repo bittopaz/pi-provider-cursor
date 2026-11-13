@@ -1,5 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { Api, Context, Model, Provider, SimpleStreamOptions } from "@earendil-works/pi-ai";
+import type { Api, AssistantMessage, Context, Model, Provider, SimpleStreamOptions } from "@earendil-works/pi-ai";
+import { clearCursorSideRequest, registerCursorSideRequest, type CursorSideRequest, type CursorSideResult } from "./cursor-side-request.js";
 import { cursorApiKeyAuth, normalizeCursorApiKey, resolveCursorCredentialApiKey } from "./cursor-api-key.js";
 import { parseEnvBoolean } from "./cursor-env-boolean.js";
 import { discoverModels, snapshotCursorModelMetadata, type CursorModelCatalogProvenance, type CursorModelFallbackIssue, type CursorModelMetadata } from "./model-discovery.js";
@@ -112,11 +113,10 @@ export function registerCursorProviderBinding(
 ) {
 	const binding = new ProviderBinding();
 	let registry: ExtensionContext["modelRegistry"] | undefined;
+	let sessionContext: ExtensionContext | undefined;
 	const operations = new WeakMap<AbortSignal, CursorRequestProvenance["purpose"]>();
 	const inactiveError = () => new Error("Cursor provider binding is not active. Bind this session's extensions, or reload the session after shutdown.");
-	pi.on("session_before_compact", (event) => { operations.set(event.signal, "compaction"); });
-	pi.on("session_before_tree", (event) => { operations.set(event.signal, "tree"); });
-	pi.on("before_provider_headers", (event, ctx) => {
+	const issueRequestReceipt = (ctx: ExtensionContext, headers: object) => {
 		const notices = new Set<string>();
 		// Pi's SDK supplies this session-owned callback for ordinary and auxiliary
 		// streams. ModelRuntime forwards the same real headers object to the provider.
@@ -146,7 +146,12 @@ export function registerCursorProviderBinding(
 				reportSdkNotice,
 			};
 		});
-		requestOwners.set(event.headers, { binding, pi, serve });
+		requestOwners.set(headers, { binding, pi, serve });
+	};
+	pi.on("session_before_compact", (event) => { operations.set(event.signal, "compaction"); });
+	pi.on("session_before_tree", (event) => { operations.set(event.signal, "tree"); });
+	pi.on("before_provider_headers", (event, ctx) => {
+		issueRequestReceipt(ctx, event.headers);
 	});
 	const stream = (model: Model<Api>, context: Context, options?: SimpleStreamOptions) => {
 		let serve: RequestReceipt["serve"] | undefined;
@@ -156,7 +161,7 @@ export function registerCursorProviderBinding(
 			if (headers) requestOwners.delete(headers);
 			if (owner && isCursorExtensionDisposed(owner.pi)) closeBinding(owner.binding);
 			if (binding.state === "closed" || (binding.state === "registered" && !owner)) throw inactiveError();
-			if (!owner) throw new Error("Cursor provider ownership is unavailable: this call has no native session request receipt. Bare modelRegistry.streamSimple calls are unsupported for Cursor; use the owning AgentSession's stream path or an independent child AgentSession.");
+			if (!owner) throw new Error("Cursor provider ownership is unavailable: this call has no native session request receipt. Bare modelRegistry.streamSimple calls are unsupported for Cursor; use the owning AgentSession's stream path, completeCursorSideRequest for a tool-free side question, or an independent child AgentSession.");
 			// A registrant that never started is a shared-runtime host's bootstrap instance
 			// (e.g. PI WEB). It delegates to the module that issued the receipt.
 			if (owner.binding !== binding && binding.state === "active") throw new Error(CURSOR_PROVIDER_OWNERSHIP_ERROR);
@@ -167,6 +172,46 @@ export function registerCursorProviderBinding(
 		}
 		return serve(model, context, options);
 	};
+	const textFromResponse = (content: readonly { type?: string; text?: string }[]): string => content
+		.flatMap((part) => part.type === "text" && typeof part.text === "string" ? [part.text] : [])
+		.join("\n")
+		.trim();
+	// A side question is a compaction-purpose summary: tool-free, and still owned by this session's receipt.
+	const runSideRequest = async (request: CursorSideRequest): Promise<CursorSideResult> => {
+		const ctx = sessionContext;
+		if (!ctx || binding.state !== "active") throw inactiveError();
+		const signal = request.signal ?? new AbortController().signal;
+		if (signal.aborted) return { text: "", stopReason: "aborted" };
+		operations.set(signal, "compaction");
+		const headers = {};
+		issueRequestReceipt(ctx, headers);
+		const storedKey = registry ? await registry.getApiKeyForProvider("cursor") : undefined;
+		const apiKey = normalizeCursorApiKey(storedKey) ?? normalizeCursorApiKey(process.env.CURSOR_API_KEY);
+		let response: AssistantMessage;
+		try {
+			response = await stream(request.model, {
+				systemPrompt: request.systemPrompt,
+				messages: [{ role: "user", content: request.prompt, timestamp: Date.now() }],
+			}, {
+				signal,
+				headers,
+				apiKey,
+				maxRetries: 0,
+				...(request.maxTokens !== undefined ? { maxTokens: request.maxTokens } : {}),
+				...(request.reasoning !== undefined ? { reasoning: request.reasoning } : {}),
+			}).result();
+		} catch (error) {
+			if (signal.aborted) return { text: "", stopReason: "aborted" };
+			throw error;
+		}
+		if (signal.aborted || response.stopReason === "aborted") return { text: "", stopReason: "aborted" };
+		return {
+			text: textFromResponse(response.content),
+			stopReason: response.stopReason,
+			errorMessage: response.errorMessage,
+		};
+	};
+	const sideRequest = { binding, run: runSideRequest };
 	const ownCatalog = catalogChannelFor(stream);
 	let onCatalog: CatalogListener | undefined;
 	// strongAnchor is intentionally unread: this session closure keeps the weakly registered subscriber alive.
@@ -200,6 +245,8 @@ export function registerCursorProviderBinding(
 	pi.on("session_start", async (_event, ctx) => {
 		if (!binding.activate()) return;
 		registry = ctx.modelRegistry;
+		sessionContext = ctx;
+		registerCursorSideRequest(sideRequest);
 		unsubscribeServingCatalog();
 		const nextSubscriber: CatalogSubscriber = {
 			stream,
@@ -222,6 +269,8 @@ export function registerCursorProviderBinding(
 	pi.on("session_shutdown", () => {
 		binding.closed = true;
 		registry = undefined;
+		sessionContext = undefined;
+		clearCursorSideRequest(sideRequest);
 		unsubscribeServingCatalog();
 	});
 	return (
