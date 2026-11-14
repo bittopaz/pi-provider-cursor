@@ -50,7 +50,7 @@ Run these commands inside Pi:
 
 For one run, pass `--cursor-fast`, `--cursor-no-fast`, or `--cursor-mode plan`. See the [model reference](docs/reference.md#choosing-a-model) for selection rules and [fast mode](docs/reference.md#fast-mode) for saved preferences.
 
-The footer shows status such as `cursor:local · fast:off`, with `plan` or `http1` when enabled. Set `PI_CURSOR_FOOTER=0` to hide the Cursor status.
+The extension status appears only for Cursor-only state Pi cannot show natively: `cursor:cloud`, `cursor:invalid`, `fast:on`, `plan`, `http1`, or `mode invalid`. A plain local agent session with fast off shows no Cursor status line; set `PI_CURSOR_FOOTER=0` to hide all of it.
 
 ## Tools and settings
 

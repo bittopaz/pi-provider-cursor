@@ -130,7 +130,16 @@ describe("buildCursorModelSelection", () => {
 						defaultFast: suffix === ":fast",
 						defaultParams: params,
 					});
-					expect(buildCursorModelSelection(modelId, "high")).toEqual({ id, params });
+					// Local policy: only an explicit `:fast` identity opts in, so an
+					// unsuffixed or `:slow` selection sends `fast=false`.
+					expect(buildCursorModelSelection(modelId, "high")).toEqual({
+						id,
+						params: [
+							{ id: "context", value: context },
+							{ id: "effort", value: "high" },
+							{ id: "fast", value: String(suffix === ":fast") },
+						],
+					});
 				}
 			}
 		}
@@ -213,7 +222,7 @@ describe("buildCursorModelSelection", () => {
 							params: [
 								...(context === "500k" ? [] : [{ id: "context", value: context }]),
 								{ id: "reasoning_effort", value: "high" },
-								{ id: "fast", value: suffix === ":slow" ? "false" : "true" },
+								{ id: "fast", value: suffix === ":fast" ? "true" : "false" },
 							],
 						});
 					}

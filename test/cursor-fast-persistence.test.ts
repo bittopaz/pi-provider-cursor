@@ -92,18 +92,19 @@ describe("Cursor fast preference persistence", () => {
 		const { pi, ctx, commandCtx, commands } = createFastHarness({ modelId: "composer-2" });
 		await pi.invokeEventWithContext("session_start", { type: "session_start", reason: "startup" }, ctx);
 
-		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:on");
+		// Catalog default is fast=true, but local policy keeps fast off until asked.
+		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", undefined);
 
 		await commands.get("cursor-fast")!.handler("", commandCtx);
 
 		expect(pi.appendEntry).toHaveBeenCalledWith("cursor-fast-state", {
 			modelId: "composer-2",
-			fast: false,
+			fast: true,
 		});
-		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:off");
-		expect(getEffectiveFastForModelId("composer-2")).toBe(false);
+		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:on");
+		expect(getEffectiveFastForModelId("composer-2")).toBe(true);
 		expect(JSON.parse(readFileSync(getCursorSdkUserConfigPath(), "utf-8"))).toEqual({
-			fastDefaults: { "composer-2": false },
+			fastDefaults: { "composer-2": true },
 		});
 	});
 
@@ -125,17 +126,18 @@ describe("Cursor fast preference persistence", () => {
 		const { pi, ctx, commandCtx, commands } = createFastHarness({ modelId: "composer-2-5" });
 		await pi.invokeEventWithContext("session_start", { type: "session_start", reason: "startup" }, ctx);
 
-		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:on");
+		// Catalog default is fast=true, but local policy keeps fast off until asked.
+		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", undefined);
 
 		await commands.get("cursor-fast")!.handler("", commandCtx);
 
 		expect(pi.appendEntry).toHaveBeenCalledWith("cursor-fast-state", {
 			modelId: "composer-2-5",
-			fast: false,
+			fast: true,
 		});
-		expect(getEffectiveFastForModelId("composer-2-5")).toBe(false);
+		expect(getEffectiveFastForModelId("composer-2-5")).toBe(true);
 		expect(JSON.parse(readFileSync(getCursorSdkUserConfigPath(), "utf-8"))).toEqual({
-			fastDefaults: { "composer-2-5": false },
+			fastDefaults: { "composer-2-5": true },
 		});
 	});
 
@@ -157,7 +159,7 @@ describe("Cursor fast preference persistence", () => {
 
 		await pi.invokeEventWithContext("session_start", { type: "session_start", reason: "startup" }, ctx);
 
-		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:off");
+		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", undefined);
 		expect(getEffectiveFastForModelId("composer-2-5")).toBe(false);
 	});
 
@@ -171,8 +173,8 @@ describe("Cursor fast preference persistence", () => {
 		await commands.get("cursor-fast")!.handler("", commandCtx);
 
 		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("Failed to save Cursor fast preference"), "error");
-		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:on");
-		expect(getEffectiveFastForModelId("composer-2")).toBe(true);
+		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", undefined);
+		expect(getEffectiveFastForModelId("composer-2")).toBe(false);
 		expect(pi.appendEntry).not.toHaveBeenCalled();
 	});
 
@@ -195,14 +197,14 @@ describe("Cursor fast preference persistence", () => {
 		expect(JSON.parse(readFileSync(path, "utf8"))).toEqual({
 			future: { enabled: true },
 			cloud: { futureCloud: "kept" },
-			fastDefaults: { "composer-2": false, other: true },
+			fastDefaults: { "composer-2": true, other: true },
 		});
 		expect(ctx.ui.notify).toHaveBeenCalledWith(
 			expect.stringContaining("was saved globally, but persisting the session entry failed"),
 			"error",
 		);
-		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:off");
-		expect(getEffectiveFastForModelId("composer-2")).toBe(false);
+		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("cursor", "cursor:local · fast:on");
+		expect(getEffectiveFastForModelId("composer-2")).toBe(true);
 		expect(existsSync(`${path}.lock`)).toBe(false);
 	});
 

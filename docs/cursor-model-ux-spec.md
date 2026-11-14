@@ -8,7 +8,7 @@ Implemented design target. This file describes the intended Cursor model UX and 
 
 Current implementation notes:
 
-- Cursor footer status is visible by default. `PI_CURSOR_FOOTER=0` clears the Cursor status on the next status refresh; provider runtime, mode, and transport validation remain active.
+- Cursor footer status is opt-in by state, not always visible: a plain local agent session with fast off draws no Cursor status line, and other states add only the segments they need (`fast:on`, `plan`, `http1`, `mode invalid`, `cursor:cloud`, `cursor:invalid`). `PI_CURSOR_FOOTER=0` clears the Cursor status on the next status refresh; provider runtime, mode, and transport validation remain active.
 
 - Provider contexts support official Pi 1.5.2/latest and current `fitchmultz/pi` main, including transcript-only hosts. `cursor-pi-context.ts` directly imports Pi's required public replay helpers. Current instructions and tools are replayed natively, system deltas are fingerprinted, and system messages are excluded from Cursor conversation formatting and trailing-result scans. Fresh cloud context preserves current instructions while excluding history. Native replay uses the request tool snapshot (including empty); the pi bridge retains its separate registry-owned surface. XML prompt sections are sanitized/deduplicated alongside the stock format.
 
@@ -444,7 +444,7 @@ The revised context-only builder is verified offline; this is not a successful l
 
 The extension validates names with `/^[A-Za-z][A-Za-z0-9._-]{0,63}$/` (extension policy, not an SDK restriction), trims required nonblank description/prompt and optional model, accepts Pi thinking levels and boolean fast, skips unusable entries, and drops unsupported fields. Own-entry construction preserves names such as `constructor` as data. Existing unrelated config saves retain definitions.
 
-`buildCursorCustomSubagentDefinitions()` keeps omitted model absent and explicit `inherit` literal; SDK 1.0.37 conversion makes both inherit the parent. Their thinking/fast fields cannot override that inheritance. Explicit models reuse canonical catalog selection, with registered fast/slow identity ahead of entry fast and catalog defaults otherwise. Parent/session/process fast settings and parent thinking are independent. Unknown IDs stay ID-only; no additional discovery request or fabricated SDK ID encoding occurs.
+`buildCursorCustomSubagentDefinitions()` keeps omitted model absent and explicit `inherit` literal; SDK 1.0.37 conversion makes both inherit the parent. Their thinking/fast fields cannot override that inheritance. Explicit models reuse canonical catalog selection, with registered fast/slow identity ahead of entry fast, and both ahead of the builtin fallback, which this fork pins to `false` so a catalog `fast=true` default does not bill fast. Parent/session/process fast settings and parent thinking are independent. Unknown IDs stay ID-only; no additional discovery request or fabricated SDK ID encoding occurs.
 
 The full resolved selection is submitted for both runtimes. **SDK 1.0.37 LOCAL conversion retains only ID/inherit and drops thinking/fast/context params.** Cloud conversion retains params, not a qualified claim about delegated service acceptance. `local.subagentInherit` controls child resources, not model params.
 
@@ -467,7 +467,7 @@ Rules:
 - Toggle unsuffixed models with `/cursor-fast`; do not persist a new default while a virtual fast alias is selected.
 - Store per-session and global per-base-model preferences for unsuffixed models.
 - When calling `Agent.create()` or `agent.send()`, include the selected `fast` value in Cursor model params.
-- Show fast-capable local models as `cursor:local · fast:on` or `cursor:local · fast:off` through `ctx.ui.setStatus()` while a Cursor model is active; cloud runtime shows `cursor:cloud · fast:n/a`.
+- Show `cursor:local · fast:on` through `ctx.ui.setStatus()` only when fast is explicitly enabled; a plain local agent session with fast off shows no Cursor status line at all. Cloud runtime shows `cursor:cloud`.
 - Keep `--cursor-fast` and `--cursor-no-fast` as explicit process-level force flags.
 
 Reason:
@@ -478,7 +478,7 @@ Reason:
 Status examples:
 
 ```text
-cursor:local · fast:off
+(no Cursor status)          # plain local agent session, fast off
 cursor:local · fast:on
 cursor:local · fast:on · http1
 ```
@@ -508,10 +508,9 @@ Rules:
 Status examples:
 
 ```text
-cursor:local · fast:n/a · plan
-cursor:local · fast:off · plan
+cursor:local · plan
 cursor:local · fast:on · plan
-cursor:cloud · fast:n/a · plan
+cursor:cloud · plan
 ```
 
 ## Footer Behavior
@@ -520,7 +519,7 @@ Hard requirement:
 
 - Leave pi's default footer intact.
 - Do not use `ctx.ui.setFooter()` for the first pass.
-- Use `ctx.ui.setStatus()` only while a Cursor model is active, showing Cursor-only state that pi cannot show natively, such as `cursor:local`, `cursor:cloud`, local `fast:on|off|n/a`, enabled local `http1`, and non-default Cursor SDK `plan` mode.
+- Use `ctx.ui.setStatus()` only while a Cursor model is active, showing Cursor-only state that pi cannot show natively: `cursor:cloud`, `cursor:invalid`, `fast:on`, enabled local `http1`, and non-default Cursor SDK `plan` mode. A plain local agent session with fast off shows no status line.
 - Non-cursor models must have no Cursor status.
 
 Reason:
@@ -534,13 +533,13 @@ Expected native footer behavior:
 - provider/model is shown by pi from the selected `cursor` model,
 - thinking level is shown by pi when `reasoning` is true,
 - context usage is computed from `contextWindow`,
-- extension status adds only Cursor-only text such as `cursor:local · fast:n/a`, `cursor:local · fast:off`, `cursor:local · fast:on · http1`, `cursor:local · fast:on · plan`, or `cursor:cloud · fast:n/a`.
+- extension status adds only Cursor-only text such as `cursor:cloud`, `cursor:invalid`, `cursor:local · fast:on`, `cursor:local · fast:on · http1`, `cursor:local · plan`, or `cursor:local · http1`, and is omitted entirely for a plain local agent session with fast off.
 
 `ctx.ui.setStatus()` adds an extension status line in the default footer. It does not patch the built-in model segment. The native shape is closer to:
 
 ```text
 ...                                      (cursor) gpt-5.5@1m • medium
-cursor:local · fast:off · plan
+cursor:local · plan
 ```
 
 not:
@@ -596,13 +595,15 @@ Use:
 
 ### New Install
 
-Use Cursor default variants:
+Use these effective variants on a new install:
 
 ```text
 gpt-5.5 -> cursor/gpt-5.5@1m, thinking medium, fast=false
-composer-2.5 -> cursor/composer-2-5, fast=true
-grok-4.6 -> cursor/grok-4.6, fast=true
+composer-2.5 -> cursor/composer-2-5, fast=false
+grok-4.6 -> cursor/grok-4.6, fast=false
 ```
+
+`composer-2.5` and `grok-4.6` declare a catalog `fast=true` default, but this fork's builtin fast fallback is `false`, so a new install sends `fast=false` until a user opts in.
 
 ### Local store migration and ownership
 
@@ -627,7 +628,7 @@ Use:
 1. pi's selected/default model and thinking level,
 2. branch HTTP transport state, then explicit environment, then the user-level HTTP default,
 3. global fast defaults for the selected SDK model ID or alias, falling back to older base-model keys,
-4. else Cursor default variant params.
+4. else `fast=false`, because this fork's builtin fast fallback is `false` (the catalog `fast=true` default never applies on its own). Other parameters keep the Cursor default variant values.
 
 ### Multi-session embedding
 
@@ -711,16 +712,18 @@ Initial Cursor default for Composer 2.5:
 
 ```text
 pi model: cursor/composer-2-5
-Cursor params: fast=true
+Cursor params: fast=false
 pi thinking: off
-Cursor status: cursor:local · fast:on
+Cursor status: (none)
 ```
+
+The catalog default is `fast=true`; this fork sends `fast=false` until a user opts in.
 
 Toggle fast:
 
 ```text
-Cursor params: fast=false
-Cursor status: cursor:local · fast:off
+Cursor params: fast=true
+Cursor status: cursor:local · fast:on
 ```
 
 `shift+tab`: no-op because the model is not reasoning-capable.
@@ -733,7 +736,7 @@ Initial Cursor default:
 pi model: cursor/gpt-5.5@1m
 Cursor params: context=1m; reasoning=medium; fast=false
 pi thinking: medium
-Cursor status: cursor:local · fast:off
+Cursor status: (none)
 ```
 
 After selecting the 272k variant:
@@ -764,16 +767,18 @@ Initial Cursor default:
 
 ```text
 pi model: cursor/gpt-5.3-codex
-Cursor params: reasoning=high; fast=true
+Cursor params: reasoning=high; fast=false
 pi thinking: high
-Cursor status: cursor:local · fast:on
+Cursor status: (none)
 ```
+
+The catalog default is `fast=true`; this fork sends `fast=false` until a user opts in.
 
 After `shift+tab` to low:
 
 ```text
 pi thinking: low
-Cursor params: reasoning=low; fast=true
+Cursor params: reasoning=low; fast=false
 ```
 
 No context variant.
@@ -824,7 +829,7 @@ Fast toggle maps to the Cursor `fast` parameter.
 
 ### `grok-4.6`
 
-Supports `effort=low|medium|high|xhigh` and `fast=false|true`; it does not advertise context variants. The Cursor default variant is `effort=high` and `fast=true`.
+Supports `effort=low|medium|high|xhigh` and `fast=false|true`; it does not advertise context variants. The Cursor default variant is `effort=high` and `fast=true`; this fork sends `fast=false` until a user opts in.
 
 ```text
 cursor/grok-4.6
@@ -864,9 +869,9 @@ Preserve every selected check's assertions and truthful scope. Visual claims nee
    - launch interactive with Cursor
    - verify default pi footer remains unchanged
    - verify Cursor status appears only for Cursor models
-   - verify Cursor fast-capable local models show `cursor:local · fast:on` or `cursor:local · fast:off`
+   - verify a plain local agent session with fast off shows no Cursor status line, and `fast:on` appears only when fast is enabled
    - the selected `cursor-http1-live` platform lane proves an enabled local HTTP/1.1/SSE turn completes and shows `http1`; offline status tests cover local-disabled and cloud status omission. Select this live lane only when changed behavior needs new real-service proof.
-   - verify Cursor `plan` status appears only in non-default mode and combines with status as `cursor:local · fast:n/a · plan`, `cursor:local · fast:on · plan`, `cursor:local · fast:off · plan`, or `cursor:cloud · fast:n/a · plan`
+   - verify Cursor `plan` status appears only in non-default mode and combines with status as `cursor:local · plan`, `cursor:local · fast:on · plan`, or `cursor:cloud · plan`
    - verify non-cursor footer/status unchanged
    - verify `shift+tab` uses pi native thinking
    - verify context changes through native model selection

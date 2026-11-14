@@ -372,8 +372,13 @@ export function buildCursorModelSelection(
 	const params = cloneParams(metadata.defaultParams);
 	applyThinkingLevel(metadata, params, thinkingLevel);
 
-	if (metadata.supportsFast && fastEnabled !== undefined) {
-		setParam(params, "fast", fastEnabled ? "true" : "false");
+	if (metadata.supportsFast) {
+		// Local policy: a catalog `fast=true` default never bills fast on its own.
+		// An unresolved preference (cloud runtime, summary turns, subagent entries
+		// without `fast`) sends `false`; the caller's explicit opt-in and a
+		// `:fast`/`:slow` model identity still win.
+		const resolvedFast = fastEnabled ?? metadata.fastOverride;
+		setParam(params, "fast", resolvedFast === true ? "true" : "false");
 	}
 
 	// Grok 4.7 rejects its explicit catalog-default context. Keep the selected

@@ -127,7 +127,7 @@ Observe with `tmux capture-pane -pt "$SESSION"` or attach manually.
 
 Pass criteria:
 
-- Footer shows `(cursor) composer-2-5`. With `--cursor-no-fast`, Cursor fast mode is off and the Cursor extension status should show `cursor:local · fast:off`; ignore unrelated status text from other extensions.
+- Footer shows `(cursor) composer-2-5`. With `--cursor-no-fast`, Cursor fast mode is off and a plain local agent session shows no Cursor extension status line; ignore unrelated status text from other extensions.
 - The run uses supported Pi `--session-id` successfully.
 - Assistant answer appears correctly.
 - `/session` shows one user and one assistant message for the simple run.

@@ -208,7 +208,11 @@ function getEffectiveFast(modelId: string, scopeKey?: string): boolean | undefin
 			? undefined
 			: getMapFastPreference(settings.fast, metadata),
 		userValue: getMapFastPreference(globalFastPreferences, metadata),
-		modelDefault: metadata.defaultFast,
+		// Local policy: billable fast variants stay off unless a session, CLI flag,
+		// alias suffix, or `fastDefaults` opt in. `metadata.defaultFast` keeps the
+		// catalog value for metadata-snapshot compatibility; it is deliberately not
+		// a fallback for this decision.
+		modelDefault: false,
 	}).value;
 }
 

@@ -314,7 +314,7 @@ try {
 import { detectCards, assertRequiredCards } from "./scripts/platform-smoke/card-detect.mjs";
 import { isSafeBundlePath } from "./scripts/platform-smoke/targets.mjs";
 const promptOnly = detectCards(["1. call pi__read on ./package.json", "2. grep ./README.md"]);
-const rendered = detectCards("read /workspace/pi-cursor-sdk/package.json\ngrep /pi-cursor-sdk/ in C:/workspace/README.md\nbridge visual smoke\nENOENT: no such file or directory\ncursor:local · fast:off · http1\ngrok-4.6\n".split("\n"));
+const rendered = detectCards("read /workspace/pi-cursor-sdk/package.json\ngrep /pi-cursor-sdk/ in C:/workspace/README.md\nbridge visual smoke\nENOENT: no such file or directory\ncursor:local · http1\ngrok-4.6\n".split("\n"));
 const wrapped = detectCards(["read /workspace/very-long-test-workspace/package.js", "on"]);
 const wrappedMidToken = detectCards(["read /workspace/very-long-test-workspace/package.j", "son"]);
 const localPreview = detectCards(["read package.json · local file preview"]);

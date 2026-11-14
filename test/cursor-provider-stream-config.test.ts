@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
 import {
 	resetCursorProviderTestState,
 	mockedCreate,
@@ -41,6 +42,22 @@ async function setCursorModeForProviderTest(mode: "agent" | "plan", existing?: R
 }
 
 describe("streamCursor prompt and model config", () => {
+	// Global fast defaults live in the real user config, so isolate this file from
+	// `~/.pi/agent/cursor-sdk.json` rather than inheriting a developer's settings.
+	let tmpAgentDir: string;
+	const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+
+	beforeEach(() => {
+		tmpAgentDir = mkdtempSync(join(tmpdir(), "pi-cursor-stream-config-"));
+		process.env.PI_CODING_AGENT_DIR = tmpAgentDir;
+	});
+
+	afterEach(() => {
+		if (originalAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = originalAgentDir;
+		rmSync(tmpAgentDir, { recursive: true, force: true });
+	});
+
 	beforeEach(resetCursorProviderTestState);
 
 	it("leaves local safety controls off by default", async () => {
@@ -642,6 +659,83 @@ describe("streamCursor prompt and model config", () => {
 		await setCursorModeForProviderTest("agent", pi);
 		await collectEvents(streamCursor(makeModel("gpt-5.5@1m"), makeContext(), { apiKey: "test-key" }));
 		expect(mockSend.mock.calls[3]?.[1]).toMatchObject({ mode: "agent" });
+	});
+
+	it("sends fast=false for a catalog fast=true default without an explicit opt-in", async () => {
+		modelDiscoveryTestUtils.registerModelItems([{
+			id: "composer-2",
+			displayName: "Composer 2",
+			parameters: [{ id: "fast", displayName: "Fast", values: [{ value: "true" }, { value: "false" }] }],
+			variants: [{ params: [{ id: "fast", value: "true" }], displayName: "Composer 2", isDefault: true }],
+		}]);
+		const mockSend = vi.fn().mockResolvedValue({
+			id: "run-1",
+			agentId: "agent-1",
+			status: "finished",
+			wait: vi.fn().mockResolvedValue({ id: "run-1", status: "finished" }),
+			cancel: vi.fn(),
+			supports: () => true,
+			unsupportedReason: () => undefined,
+		});
+		mockCreatedAgent({
+			send: mockSend,
+			[Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
+		});
+
+		await collectEvents(streamCursor(makeModel("composer-2"), makeContext(), { apiKey: "test-key" }));
+
+		expect(mockedCreate).toHaveBeenCalledWith(expect.objectContaining({
+			model: { id: "composer-2", params: [{ id: "fast", value: "false" }] },
+		}));
+		expect(mockSend.mock.calls[0]?.[1]).toMatchObject({
+			model: { id: "composer-2", params: [{ id: "fast", value: "false" }] },
+		});
+	});
+
+	it("sends fast=false on a cloud turn without an explicit :fast identity", async () => {
+		modelDiscoveryTestUtils.registerModelItems([{
+			id: "composer-2",
+			displayName: "Composer 2",
+			parameters: [{ id: "fast", displayName: "Fast", values: [{ value: "true" }, { value: "false" }] }],
+			variants: [{ params: [{ id: "fast", value: "true" }], displayName: "Composer 2", isDefault: true }],
+		}]);
+		process.env.PI_CURSOR_RUNTIME = "cloud";
+		process.env.PI_CURSOR_CLOUD_ALLOW_LOCAL_STATE = "1";
+		process.env.PI_CURSOR_CLOUD_ACK = "1";
+		try {
+			const mockSend = vi.fn().mockResolvedValue({
+				id: "run-1",
+				agentId: "bc-00000000-0000-0000-0000-000000000001",
+				status: "finished",
+				wait: vi.fn().mockResolvedValue({ id: "run-1", status: "finished", result: "cloud done" }),
+				cancel: vi.fn(),
+				supports: () => true,
+				unsupportedReason: () => undefined,
+			});
+			mockCreatedAgent({ agentId: "bc-00000000-0000-0000-0000-000000000001", send: mockSend });
+
+			await collectEvents(streamCursor(
+				makeModel("composer-2"),
+				{ messages: [{ role: "user", content: "cloud request", timestamp: 1 }] },
+				{ apiKey: "test-key" },
+			));
+
+			// Cloud passes no pi-local fast preference, so the catalog `fast=true`
+			// default must not reach the wire; only the `:fast` identity opts in.
+			expect(mockedCreate.mock.calls[0][0]).toMatchObject({
+				model: { id: "composer-2", params: [{ id: "fast", value: "false" }] },
+			});
+			expect(mockSend.mock.calls[0]?.[1]).toMatchObject({
+				model: { id: "composer-2", params: [{ id: "fast", value: "false" }] },
+			});
+		} finally {
+			delete process.env.PI_CURSOR_RUNTIME;
+			delete process.env.PI_CURSOR_CLOUD_ALLOW_LOCAL_STATE;
+			delete process.env.PI_CURSOR_CLOUD_ACK;
+			// Restore the shared fixture so this file's last test cannot leak a
+			// `fast=true` catalog default into the next test file.
+			await resetCursorProviderTestState();
+		}
 	});
 
 	it("passes Cursor alias model selection back to the SDK", async () => {
