@@ -8,7 +8,9 @@ import { inferImageMimeType } from "./cursor-tool-result-display-readers.js";
 import { LOCAL_READ_PREVIEW_NOTICE, isLocalReadPreviewContent } from "./cursor-transcript-utils.js";
 import {
 	CURSOR_REPLAY_ACTIVITY_TOOL_NAME,
+	collapsesActivityDetailsByDefault,
 	getCursorReplayCallSummary,
+	normalizeCursorReplayActivitySummary,
 	shouldShowCursorReplayCollapsedExpandHint,
 	type CursorReplayToolName,
 } from "./cursor-tool-presentation-registry.js";
@@ -432,12 +434,17 @@ function renderExpandableCursorReplayResult(
 	isError: boolean,
 ): Component {
 	const text = firstContentText(result);
-	const summary = details.summary ?? text.split("\n").find((line) => line.trim()) ?? "completed";
 	const expandedText = details.expandedText ?? (text.includes("\n") ? text : undefined);
+	const rawSummary = details.summary ?? text.split("\n").find((line) => line.trim()) ?? "completed";
+	const summary = normalizeCursorReplayActivitySummary(details.sourceToolName, rawSummary, expandedText);
 	const showExpandHint = expandedText && !options.expanded && shouldShowCursorReplayCollapsedExpandHint(details.sourceToolName);
 	const expandHint = showExpandHint ? theme.fg("dim", ` (${context.keyHint("app.tools.expand", "to expand")})`) : "";
 	let rendered = `${theme.fg("toolTitle", theme.bold(title))} ${theme.fg(isError ? "error" : "success", summary)}${expandHint}`;
-	if (expandedText && (options.expanded || !details.collapseDetailsByDefault)) {
+	// Rows written before a spec started collapsing its details carry no flag of their own, so the
+	// spec decides when the row does not. That keeps an old session's payload dumps collapsed instead
+	// of letting them replay at full length.
+	const collapseDetails = details.collapseDetailsByDefault ?? collapsesActivityDetailsByDefault(details.sourceToolName);
+	if (expandedText && (options.expanded || !collapseDetails)) {
 		const preview = formatCursorReplayActivityPreview(
 			details,
 			expandedText,

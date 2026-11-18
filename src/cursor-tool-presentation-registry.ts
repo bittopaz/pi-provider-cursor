@@ -5,6 +5,7 @@
  */
 
 import {
+	MCP_SUMMARY_SEPARATOR,
 	formatReplaySemSearchQuery,
 	readCursorReplaySummaryString,
 	summarizeReplayGenericActivity,
@@ -23,6 +24,7 @@ import {
 	type CursorReplayWebSearchSummaryArgs,
 } from "./cursor-replay-summary-args.js";
 import { truncateCursorDisplayLine } from "./cursor-display-text.js";
+import { previewFromLine, previewFromText } from "./cursor-structured-summary.js";
 import { getCursorTaskActivityTitle } from "./cursor-task-presentation.js";
 import {
 	buildCreatePlanReplaySummaryArgs,
@@ -51,6 +53,49 @@ export const CURSOR_REPLAY_ACTIVITY_TOOL_NAME = "cursor" as const;
 const EMPTY_REPLAY_DETAIL_FIELDS = (): Record<string, never> => ({});
 const COLLAPSED_REPLAY_DETAIL_FIELDS = (): { collapseDetailsByDefault: true } => ({ collapseDetailsByDefault: true });
 
+/** Line `readMcpDisplayResult` prefixes a tool-error body with; it names no outcome of its own. */
+const MCP_TOOL_ERROR_MARKER = "[tool error]";
+
+/**
+ * Brings a recorded MCP summary to the shape this spec writes today.
+ *
+ * Earlier versions put the first 120 characters of the result after the ` · ` separator, which for
+ * JSON produced an opening fragment such as `[{"name":"sonarqube_analyze`. A recorded preview that is
+ * already intelligible is what the writer meant, so it is kept. When it is only a fragment, the
+ * payload in `expandedText` is read for a name instead.
+ */
+function normalizeMcpActivitySummary(summary: string, expandedText?: string): string {
+	const separator = summary.indexOf(MCP_SUMMARY_SEPARATOR);
+	const toolName = (separator === -1 ? summary : summary.slice(0, separator)).trim();
+	if (!toolName) return summary.trim();
+
+	const recorded = separator === -1 ? undefined : summary.slice(separator + MCP_SUMMARY_SEPARATOR.length).trim();
+	const recordedPreview = recorded ? previewFromLine(recorded, 120) : undefined;
+	if (recordedPreview && recordedPreview !== toolName) {
+		return `${toolName}${MCP_SUMMARY_SEPARATOR}${recordedPreview}`;
+	}
+
+	const recovered = expandedText ? mcpPreviewFromExpandedText(toolName, expandedText) : undefined;
+	if (recovered && recovered !== toolName) return `${toolName}${MCP_SUMMARY_SEPARATOR}${recovered}`;
+	return toolName;
+}
+
+/**
+ * Preview re-derived from a recorded payload.
+ *
+ * `formatMcp` writes `toolName`, a blank line, then the body, so the text after the title is the one
+ * the write path would have previewed. The tool-error marker is skipped because it labels the body
+ * without describing it.
+ */
+function mcpPreviewFromExpandedText(toolName: string, expandedText: string): string | undefined {
+	const lines = expandedText.split("\n");
+	const start = lines.findIndex((line) => line.trim() === toolName);
+	const body = (start === -1 ? lines : lines.slice(start + 1))
+		.filter((line) => line.trim() && line.trim() !== MCP_TOOL_ERROR_MARKER)
+		.join("\n");
+	return body ? previewFromText(body, 120) : undefined;
+}
+
 export type CursorWebToolKind = "webSearch" | "webFetch";
 
 export type CursorToolLifecycleLabelKind =
@@ -78,11 +123,28 @@ export interface CursorToolVisibilityPolicy {
 
 export interface CursorToolReplayDisplayPolicy {
 	showCollapsedExpandHint?: boolean;
+	/**
+	 * Rewrites a recorded activity summary before it is drawn.
+	 *
+	 * Rows written before a spec changed its summary shape keep the old text in the session file, so
+	 * the spec owns turning that text into what it would write today. The recorded payload is passed
+	 * too, because a truncated summary is often not enough to recover a name. Returning the input
+	 * unchanged leaves the summary alone.
+	 */
+	normalizeActivitySummary?: (summary: string, expandedText?: string) => string;
 }
 
 export interface CursorToolActivityReplaySpec<TArgs extends CursorReplaySummaryArgs = CursorReplaySummaryArgs> {
 	buildActivityArgs: (context: CursorReplayActivityBuildContext) => TArgs;
 	buildDetails: (context: CursorReplayActivityBuildContext, contentText: string) => CursorReplayActivityDetailFields;
+	/**
+	 * Whether a collapsed row shows its summary alone instead of previewing the payload.
+	 *
+	 * Rows recorded before a spec set this carry no flag of their own, and the renderer consults the
+	 * current spec for them. Keep it a data field rather than metadata on `buildDetails`, so a spec
+	 * that collapses new rows cannot silently leave old rows expanded.
+	 */
+	collapseDetailsByDefault?: true;
 }
 
 export interface CursorToolGenerateImageReplaySpec {
@@ -245,10 +307,14 @@ const CURSOR_TOOL_PRESENTATION_SPECS = [
 		displayLabel: "Cursor MCP",
 		visibility: { lifecycleEligible: true },
 		lifecycleLabelKind: "mcp",
+		replayDisplay: { normalizeActivitySummary: normalizeMcpActivitySummary },
 		replayCallSummary: withActivitySummaryFallback(summarizeReplayMcp),
 		activityReplay: {
 			buildActivityArgs: buildMcpReplaySummaryArgs,
-			buildDetails: EMPTY_REPLAY_DETAIL_FIELDS,
+			// MCP results are full payloads, often tens of thousands of characters of JSON. Collapsed
+			// rows must show the summary alone, as web search and fetch already do.
+			buildDetails: COLLAPSED_REPLAY_DETAIL_FIELDS,
+			collapseDetailsByDefault: true,
 		},
 	},
 	{
@@ -287,6 +353,7 @@ const CURSOR_TOOL_PRESENTATION_SPECS = [
 		activityReplay: {
 			buildActivityArgs: buildWebSearchReplaySummaryArgs,
 			buildDetails: COLLAPSED_REPLAY_DETAIL_FIELDS,
+			collapseDetailsByDefault: true,
 		},
 	},
 	{
@@ -303,6 +370,7 @@ const CURSOR_TOOL_PRESENTATION_SPECS = [
 		activityReplay: {
 			buildActivityArgs: buildWebFetchReplaySummaryArgs,
 			buildDetails: COLLAPSED_REPLAY_DETAIL_FIELDS,
+			collapseDetailsByDefault: true,
 		},
 	},
 ] as const satisfies readonly CursorToolPresentationSpec[];
@@ -423,6 +491,28 @@ export function getCursorToolActivityReplaySpec(normalizedKey: string): CursorTo
 
 export function getCursorToolGenerateImageReplaySpec(normalizedKey: string): CursorToolGenerateImageReplaySpec | undefined {
 	return getCursorToolPresentationSpecByNormalizedKey(normalizedKey)?.generateImageReplay;
+}
+
+/**
+ * Whether this tool's activity rows collapse their details by default, per the current spec.
+ *
+ * Renderers use this for rows recorded before the spec collapsed anything: the row carries no flag,
+ * but the spec still says the payload belongs behind `ctrl+o`.
+ */
+export function collapsesActivityDetailsByDefault(normalizedKey: string | undefined): boolean {
+	if (!normalizedKey) return false;
+	return getCursorToolPresentationSpecByNormalizedKey(normalizedKey)?.activityReplay?.collapseDetailsByDefault === true;
+}
+
+/** Applies the spec's summary rewrite, if it has one, to a recorded summary and its payload. */
+export function normalizeCursorReplayActivitySummary(
+	normalizedKey: string | undefined,
+	summary: string,
+	expandedText?: string,
+): string {
+	if (!normalizedKey) return summary;
+	const normalize = getCursorToolPresentationSpecByNormalizedKey(normalizedKey)?.replayDisplay?.normalizeActivitySummary;
+	return normalize ? normalize(summary, expandedText) : summary;
 }
 
 export function shouldShowCursorReplayCollapsedExpandHint(normalizedKey: string | undefined): boolean {
