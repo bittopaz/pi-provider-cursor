@@ -124,7 +124,7 @@ Then, inside pi:
 
 If pi started without a key, known fallback Cursor models still register so `/login` and CLI model selection remain reachable. Native login, logout, key rotation, and runtime-key changes immediately resync the matching cached catalog or fallback in the same session, without making a catalog request. Run `/cursor-refresh-models` for the full live catalog without restarting pi.
 
-Set `PI_CURSOR_HIDE_MODELS_WHEN_LOGGED_OUT=1` to hide unauthenticated Cursor models from the picker and `--list-models`. This is off by default. Known model identities remain CLI-selectable, including `pi --model cursor/grok-4.6 --api-key "your-key"`; `/login` stays reachable. Stored logout does not hide models or delete the matching cache when environment or `models.json` auth remains. Pi's native logout also removes its runtime key override. Set `PI_CURSOR_MODEL_ALIASES=1` to include unambiguous SDK alias rows in `getAvailable` (`/model`, `pi --list-models`, and `--models` / `enabledModels` model scopes) alongside canonical rows; when unset, `getAvailable` omits duplicate alias rows while `defaultModel`, explicit `--model` selection, and saved sessions still resolve them.
+Set `PI_CURSOR_HIDE_MODELS_WHEN_LOGGED_OUT=1` to hide unauthenticated Cursor models from the picker and `--list-models`. This is off by default. Known model identities remain CLI-selectable, including `pi --model cursor/grok-4.6 --api-key "your-key"`; `/login` stays reachable. Stored logout does not hide models or delete the matching cache when environment or `models.json` auth remains. Pi's native logout also removes its runtime key override. Set `PI_CURSOR_MODEL_ALIASES=1` to include bare SDK alias rows in `getAvailable` (`/model`, `pi --list-models`, and `--models` / `enabledModels` model scopes) alongside bare catalog rows; when unset, `getAvailable` omits alias rows while `defaultModel`, explicit `--model` selection, and saved sessions still resolve them. Either way, the list and picker show one bare row per model at its largest context window, so `@1m`, `@272k`, `:fast`, and `:slow` rows never appear; typing one of those ids still selects that exact variant.
 
 The default fallback availability policy is not proof of a usable key. A real Cursor SDK API key is still required for Cursor runs.
 
@@ -197,9 +197,10 @@ pi --model cursor/claude-opus-4-8@300k
 How to read model IDs:
 
 - `cursor/...` is the Cursor provider registered by this extension
-- `@1m`, `@272k`, and `@300k` are context-window variants
+- `@1m`, `@272k`, and `@300k` select non-default context windows; `/model` and `pi --list-models` list only the bare model id, at the largest window that model accepts, so these suffixes never add rows
 - `:medium`, `:high`, `:xhigh`, and `:max` are pi thinking-level suffixes for models where the Cursor SDK exposes the corresponding pi-controllable thinking parameter
-- unambiguous latest-style Cursor aliases returned by `Cursor.models.list()` are registered too, using the same context suffixes when the target model has context variants; `/model`, `pi --list-models`, and `--models` / `enabledModels` scopes omit those duplicate alias rows by default (`PI_CURSOR_MODEL_ALIASES=1` includes them), while saved sessions, `defaultModel`, and explicit `--model` selection still resolve them; aliases shared by multiple base models or colliding with a base model ID are skipped because their SDK resolution and displayed metadata can diverge
+- `:fast` and `:slow` select a speed variant; they are never listed, and the bare id leaves speed to `/cursor-fast`
+- unambiguous latest-style Cursor aliases returned by `Cursor.models.list()` are registered too; `/model`, `pi --list-models`, and `--models` / `enabledModels` scopes omit bare alias rows by default (`PI_CURSOR_MODEL_ALIASES=1` includes them), while saved sessions, `defaultModel`, and explicit `--model` selection still resolve them; aliases shared by multiple base models or colliding with a base model ID are skipped because their SDK resolution and displayed metadata can diverge
 
 Examples with pi thinking controls:
 

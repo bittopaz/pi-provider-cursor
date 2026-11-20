@@ -115,6 +115,7 @@ describe("buildCursorModelSelection", () => {
 		const models = register([fable]);
 		const expectedIds: string[] = [];
 		for (const id of ["claude-fable-5-2", "fable-5-2", "fable-5.2"]) {
+			expectedIds.push(id);
 			for (const context of ["300k", "1m"]) {
 				for (const suffix of ["", ":fast", ":slow"]) {
 					const modelId = `${id}@${context}${suffix}`;

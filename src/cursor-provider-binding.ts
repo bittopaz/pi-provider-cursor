@@ -3,7 +3,7 @@ import type { Api, AssistantMessage, Context, Model, Provider, SimpleStreamOptio
 import { clearCursorSideRequest, registerCursorSideRequest, type CursorSideRequest, type CursorSideResult } from "./cursor-side-request.js";
 import { cursorApiKeyAuth, normalizeCursorApiKey, resolveCursorCredentialApiKey } from "./cursor-api-key.js";
 import { parseEnvBoolean } from "./cursor-env-boolean.js";
-import { discoverModels, snapshotCursorModelMetadata, type CursorModelCatalogProvenance, type CursorModelFallbackIssue, type CursorModelMetadata } from "./model-discovery.js";
+import { discoverModels, isListedCursorModelId, snapshotCursorModelMetadata, type CursorModelCatalogProvenance, type CursorModelFallbackIssue, type CursorModelMetadata } from "./model-discovery.js";
 import { clearModelListCache } from "./model-list-cache.js";
 import { captureCursorCloudLifecycleRecorder } from "./cursor-cloud-lifecycle.js";
 import { captureCursorUsageRecorder } from "./cursor-usage-ledger.js";
@@ -88,12 +88,8 @@ function closeBinding(binding: SharedProviderBinding): void {
 	binding.active = false;
 	binding.closed = true;
 }
-function collectAliasModelIds(metadata: readonly CursorModelMetadata[] = []): ReadonlySet<string> {
-	const ids = new Set<string>();
-	for (const entry of metadata) {
-		if (entry.selectionModelId !== entry.baseModelId) ids.add(entry.piModelId);
-	}
-	return ids;
+function toMetadataById(metadata: readonly CursorModelMetadata[] = []): ReadonlyMap<string, CursorModelMetadata> {
+	return new Map(metadata.map((entry) => [entry.piModelId, entry]));
 }
 type CursorRegistry = {
 	getProvider(id: string): { streamSimple?: object } | undefined;
@@ -285,15 +281,15 @@ export function registerCursorProviderBinding(
 				...definition, provider: "cursor", api: "cursor-sdk", baseUrl: "https://cursor.com",
 			}));
 		let current = toNative(models);
-		let aliasModelIds = collectAliasModelIds(initialMetadata);
+		let metadataById = toMetadataById(initialMetadata);
 		const provider: Provider<"cursor-sdk"> = {
 			id: "cursor", name: "Cursor", baseUrl: "https://cursor.com",
 			auth: { apiKey: cursorApiKeyAuth() },
 			getModels: () => current,
-			filterModels: (available) =>
-				parseEnvBoolean(process.env.PI_CURSOR_MODEL_ALIASES, false)
-					? available
-					: available.filter((model) => !aliasModelIds.has(model.id)),
+			filterModels: (available) => {
+				const includeAliases = parseEnvBoolean(process.env.PI_CURSOR_MODEL_ALIASES, false);
+				return available.filter((model) => isListedCursorModelId(model.id, metadataById, includeAliases));
+			},
 			stream: stream,
 			streamSimple: stream,
 			async refreshModels(context) {
@@ -321,7 +317,7 @@ export function registerCursorProviderBinding(
 							update();
 							current = toNative(definitions);
 							const resolvedMetadata = metadata ?? snapshotCursorModelMetadata();
-							aliasModelIds = collectAliasModelIds(resolvedMetadata);
+							metadataById = toMetadataById(resolvedMetadata);
 							// Do not infer logout before native composed auth is reachable.
 							if (registry && !apiKey) clearModelListCache();
 							emitCatalog(provenance, resolvedMetadata);
