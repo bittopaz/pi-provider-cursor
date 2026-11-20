@@ -258,20 +258,12 @@ it("filters SDK alias rows from getAvailable by default while keeping CLI and pe
 		await login(runtime, "synthetic-alias-filter");
 		await registry.refresh({ providers: ["cursor"], allowNetwork: false, force: true });
 
-		expect((await runtime.getAvailable("cursor")).map((m) => m.id)).toEqual([
-			"native-canonical@1m",
-			"native-canonical@1m:fast",
-			"native-canonical@1m:slow",
-		]);
+		expect((await runtime.getAvailable("cursor")).map((m) => m.id)).toEqual(["native-canonical"]);
 		expect(registry.getAvailable().filter((m) => m.provider === "cursor").map((m) => m.id)).toEqual([
-			"native-canonical@1m",
-			"native-canonical@1m:fast",
-			"native-canonical@1m:slow",
+			"native-canonical",
 		]);
 		expect((await resolveModelScopeWithDiagnostics(["cursor/*"], runtime)).scopedModels.map((entry) => entry.model.id)).toEqual([
-			"native-canonical@1m",
-			"native-canonical@1m:fast",
-			"native-canonical@1m:slow",
+			"native-canonical",
 		]);
 		expect(resolveCliModel({ cliProvider: "cursor", cliModel: "native-alias@1m", modelRuntime: runtime }).model?.id).toBe("native-alias@1m");
 
@@ -305,16 +297,12 @@ it("filters SDK alias rows from getAvailable by default while keeping CLI and pe
 
 		vi.stubEnv("PI_CURSOR_MODEL_ALIASES", "1");
 		await registry.refresh({ providers: ["cursor"], allowNetwork: false });
-		expect((await resolveModelScopeWithDiagnostics(["cursor/native-alias@1m"], runtime)).scopedModels.map((entry) => entry.model.id)).toEqual([
-			"native-alias@1m",
+		expect((await resolveModelScopeWithDiagnostics(["cursor/native-alias"], runtime)).scopedModels.map((entry) => entry.model.id)).toEqual([
+			"native-alias",
 		]);
 		expect((await runtime.getAvailable("cursor")).map((m) => m.id)).toEqual([
-			"native-canonical@1m",
-			"native-canonical@1m:fast",
-			"native-canonical@1m:slow",
-			"native-alias@1m",
-			"native-alias@1m:fast",
-			"native-alias@1m:slow",
+			"native-canonical",
+			"native-alias",
 		]);
 	} finally { await pi.runSessionShutdown(); }
 });

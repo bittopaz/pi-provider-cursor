@@ -1,3 +1,4 @@
+import { Console } from "node:console";
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -161,6 +162,235 @@ describe("Cursor SDK presentation boundary", () => {
 			restore();
 			expect(Buffer.concat(output.stdout)).toEqual(Buffer.from("18:05:"));
 		} finally { restore(); output.restore(); }
+	});
+
+	it("suppresses SDK frames on a host console that bypasses the process write sinks", () => {
+		// A compiled Bun Pi binary resolves the SDK logger's console calls against
+		// its own writer, so those bytes never reach process.stdout/stderr. Verified
+		// on the shipped pi 1.5.2 binary: patching write alone left every
+		// `load completed` frame visible while Node's build hid them.
+		const originalConsole = globalThis.console;
+		const captured = { stdout: [] as string[], stderr: [] as string[] };
+		const hostConsole = {
+			log: (...args: unknown[]) => { captured.stdout.push(args.join(" ") + "\n"); },
+			info: (...args: unknown[]) => { captured.stdout.push(args.join(" ") + "\n"); },
+			warn: (...args: unknown[]) => { captured.stderr.push(args.join(" ") + "\n"); },
+			error: (...args: unknown[]) => { captured.stderr.push(args.join(" ") + "\n"); },
+		} as unknown as Console;
+		globalThis.console = hostConsole;
+		let restore: (() => void) | undefined;
+		try {
+			restore = installCursorSdkOutputFilter();
+			// A non-framed console call is swallowed whole while the mute covers it.
+			suppressCursorSdkOutput(() => globalThis.console.log("muted", { multi: true }));
+			expect(captured.stdout).toEqual([]);
+			globalThis.console.log("05:22:47.267 INFO  CursorPluginsAgentSkillsService load completed meta={durationMs: 5, ruleCount: 58, skillCount: 58}");
+			globalThis.console.warn("05:22:47.309 INFO  AgentSkillsCursorRulesService load completed meta={durationMs: 47}");
+			expect(captured.stdout).toEqual([]);
+			expect(captured.stderr).toEqual([]);
+			globalThis.console.log("VISIBLE host line");
+			expect(captured.stdout.join("")).toBe("VISIBLE host line\n");
+			captured.stdout.length = 0;
+			suppressCursorSdkOutput(() => globalThis.console.log("05:22:47.267 INFO  muted by creation"));
+			expect(captured.stdout).toEqual([]);
+			globalThis.console.log("05:22:47.267 INFO  after creation mute");
+			expect(captured.stdout.join("")).toBe("05:22:47.267 INFO  after creation mute\n");
+		} finally { restore?.(); globalThis.console = originalConsole; }
+	});
+
+	it("reports a capability notice on the console path during the creation mute, like the sink", () => {
+		// `Agent.create()` runs inside suppressCursorSdkOutput() and reports notices
+		// through the same layer. A mute that swallowed them here would lose the
+		// warning only on Bun, where this layer is the sole interception point.
+		const originalConsole = globalThis.console;
+		const captured = collectOutput();
+		globalThis.console = {
+			log: () => {}, info: () => {}, error: () => {}, warn: () => {},
+		} as unknown as Console;
+		const warning = "[local-plugins-bootstrap] loadUserLocalPlugin outside rejected: symlink target /outside is outside /root {}";
+		let restore: (() => void) | undefined;
+		try {
+			restore = installCursorSdkOutputFilter();
+			const notices: string[] = [];
+			withCursorSdkOutputNoticeHandler(kind => { notices.push(kind); }, () =>
+				suppressCursorSdkOutput(() => globalThis.console.warn(warning)));
+			expect(notices).toEqual(["outsidePlugin"]);
+			expect(Buffer.concat(captured.stderr)).toEqual(Buffer.alloc(0)); // the reporter owns rendering it
+			// An owner that declines to render must not turn the warning into silence.
+			withCursorSdkOutputNoticeHandler(() => false, () => globalThis.console.warn(warning));
+			expect(Buffer.concat(captured.stderr).toString()).toBe(`${warning}\n`);
+		} finally { restore?.(); captured.restore(); globalThis.console = originalConsole; }
+	});
+
+	it("reports one console notice once and rebinds a host console swapped after install", () => {
+		const originalConsole = globalThis.console;
+		const output = collectOutput();
+		let restore: (() => void) | undefined;
+		try {
+			// A Node-shaped console writes through the patched sinks, so a missing
+			// hand-off would classify and report the same frame twice.
+			globalThis.console = new Console({ stdout: process.stdout, stderr: process.stderr, colorMode: false });
+			restore = installCursorSdkOutputFilter();
+			let reports = 0;
+			withCursorSdkOutputNoticeHandler(() => { reports += 1; }, () =>
+				globalThis.console.warn("[local-plugins-bootstrap] loadUserLocalPlugin x rejected: symlink target /o is outside /r {}"));
+			expect(reports).toBe(1);
+			expect(Buffer.concat(output.stderr)).toEqual(Buffer.alloc(0));
+
+			// A host may swap its console after the lease opened (worker stdio, TUI).
+			// The next lease must filter the new object, not the stale one.
+			const swapped = { stdout: [] as string[], stderr: [] as string[] };
+			globalThis.console = {
+				log: (...args: unknown[]) => { swapped.stdout.push(args.join(" ")); },
+				info: (...args: unknown[]) => { swapped.stdout.push(args.join(" ")); },
+				warn: (...args: unknown[]) => { swapped.stderr.push(args.join(" ")); },
+				error: (...args: unknown[]) => { swapped.stderr.push(args.join(" ")); },
+			} as unknown as Console;
+			const rebound = installCursorSdkOutputFilter();
+			try {
+				globalThis.console.log("05:22:47.267 INFO  CursorPluginsAgentSkillsService load completed meta={durationMs: 5}");
+				expect(swapped).toEqual({ stdout: [], stderr: [] });
+				// A host that replaces one method on the same object retires our
+				// wrapper; the next lease rebinds over it instead of leaving it raw.
+				const raw = { stdout: [] as string[] };
+				(globalThis.console as { log: unknown }).log = (...args: unknown[]) => { raw.stdout.push(args.join(" ")); };
+				const reboundAgain = installCursorSdkOutputFilter();
+				try {
+					globalThis.console.log("05:22:47.267 INFO  CursorPluginsAgentSkillsService load completed meta={durationMs: 6}");
+					expect(raw.stdout).toEqual([]);
+				} finally { reboundAgain(); }
+			} finally { rebound(); }
+		} finally { restore?.(); output.restore(); globalThis.console = originalConsole; }
+	});
+
+	it("leaves a released console wrapper transparent and does not stack a second one", () => {
+		const originalConsole = globalThis.console;
+		const captured: string[] = [];
+		const warning = "[local-plugins-bootstrap] loadUserLocalPlugin y rejected: symlink target /o is outside /r {}";
+		const noise = "05:22:47.267 INFO  CursorPluginsAgentSkillsService load completed meta={durationMs: 5}";
+		globalThis.console = {
+			log: (...args: unknown[]) => { captured.push(args.join(" ")); }, info: () => {}, warn: () => {}, error: () => {},
+		} as unknown as Console;
+		let restore: (() => void) | undefined;
+		try {
+			restore = installCursorSdkOutputFilter();
+			// A host that kept its own reference to the method we replaced.
+			const retained = globalThis.console.log;
+			restore(); restore = undefined;
+			retained(warning);
+			retained(noise); // a released lease must not filter, not even SDK noise
+			expect(captured).toEqual([warning, noise]);
+			captured.length = 0;
+			// A later lease installs its own wrapper rather than reviving the dead one.
+			restore = installCursorSdkOutputFilter();
+			expect(globalThis.console.log).not.toBe(retained);
+			let reports = 0;
+			withCursorSdkOutputNoticeHandler(() => { reports += 1; }, () => globalThis.console.log(warning));
+			expect(reports).toBe(1);
+			expect(captured).toEqual([]);
+		} finally { restore?.(); globalThis.console = originalConsole; }
+	});
+
+	it("renders the reporter's formatted echo once instead of swallowing it", () => {
+		// A reporter renders the notice by writing it. That nested console call must
+		// not be re-decided as a new notice.
+		const originalConsole = globalThis.console;
+		const captured = collectOutput();
+		const warning = "[local-plugins-bootstrap] loadUserLocalPlugin z rejected: symlink target /o is outside /r {}";
+		globalThis.console = {
+			log: () => {}, info: () => {}, error: () => {},
+			warn: (...args: unknown[]) => { process.stderr.write(`${args.join(" ")}\n`); },
+		} as unknown as Console;
+		let restore: (() => void) | undefined;
+		try {
+			restore = installCursorSdkOutputFilter();
+			let reports = 0;
+			withCursorSdkOutputNoticeHandler((_kind, message) => {
+				reports += 1;
+				globalThis.console.warn(message);
+			}, () => globalThis.console.warn(warning));
+			expect(reports).toBe(1);
+			const written = Buffer.concat(captured.stderr).toString();
+			expect(written.match(/Cursor skipped a local plugin/g) ?? []).toHaveLength(1);
+		} finally { restore?.(); captured.restore(); globalThis.console = originalConsole; }
+	});
+
+	it("does not recurse when a reporter echoes the raw SDK line back through console", () => {
+		// The frame being reported is itself a diagnostic on the same console. A
+		// nested decision would classify it again and report the same frame forever.
+		const originalConsole = globalThis.console;
+		const captured = collectOutput();
+		const warning = "[local-plugins-bootstrap] loadUserLocalPlugin w rejected: symlink target /o is outside /r {}";
+		globalThis.console = {
+			log: () => {}, info: () => {}, error: () => {},
+			warn: (...args: unknown[]) => { process.stderr.write(`${args.join(" ")}\n`); },
+		} as unknown as Console;
+		let restore: (() => void) | undefined;
+		try {
+			restore = installCursorSdkOutputFilter();
+			let reports = 0;
+			withCursorSdkOutputNoticeHandler(() => {
+				reports += 1;
+				globalThis.console.warn(warning);
+			}, () => globalThis.console.warn(warning));
+			expect(reports).toBe(1);
+			expect(captured.stderr.length).toBeGreaterThan(0);
+		} finally { restore?.(); captured.restore(); globalThis.console = originalConsole; }
+	});
+
+	it("keeps a pending sink frame in place when a console frame is decided between writes", () => {
+		// The console layer flushes the sink's pending candidate first. Without that,
+		// a partial TUI frame swallows the console line into one unclassifiable frame
+		// and the capability notice inside it is never reported.
+		const output = collectOutput();
+		const originalConsole = globalThis.console;
+		globalThis.console = { log: () => {}, info: () => {}, warn: () => {}, error: () => {} } as unknown as Console;
+		let restore: (() => void) | undefined;
+		try {
+			restore = installCursorSdkOutputFilter();
+			const notices: string[] = [];
+			withCursorSdkOutputNoticeHandler(kind => { notices.push(kind); }, () => {
+				process.stdout.write("18:05:");
+				globalThis.console.log("[local-plugins-bootstrap] loadUserLocalPlugin v rejected: symlink target /a is outside /b {}");
+				process.stdout.write("TAIL\n");
+			});
+			expect(notices).toEqual(["outsidePlugin"]);
+			expect(Buffer.concat(output.stdout).toString()).toBe("18:05:TAIL\n");
+		} finally { restore?.(); output.restore(); globalThis.console = originalConsole; }
+	});
+
+	it("keeps a CRLF console separator when a reported notice is re-emitted", () => {
+		// The SDK emits bare lines, but a host may log CRLF. A frame the reporter
+		// declines to render must keep its own separator, not become LF-only.
+		const originalConsole = globalThis.console;
+		const captured = collectOutput();
+		const warning = "[local-plugins-bootstrap] loadUserLocalPlugin u rejected: symlink target /o is outside /r {}";
+		globalThis.console = { log: () => {}, info: () => {}, warn: () => {}, error: () => {} } as unknown as Console;
+		let restore: (() => void) | undefined;
+		try {
+			restore = installCursorSdkOutputFilter();
+			withCursorSdkOutputNoticeHandler(() => false, () => globalThis.console.warn(`${warning}\r\n`));
+			expect(Buffer.concat(captured.stderr).toString()).toBe(`${warning}\r\n`);
+		} finally { restore?.(); captured.restore(); globalThis.console = originalConsole; }
+	});
+
+	it("stays usable when a hardened host console rejects a method patch", () => {
+		// SES/lockdown embedders and sandboxed runtimes hand out frozen consoles.
+		// Failing to patch one method must not throw from extension load, and it
+		// must not leave the process sinks patched with no cleanup behind them.
+		const originalConsole = globalThis.console;
+		const frozen = Object.freeze({
+			log: () => {}, info: () => {}, warn: () => {}, error: () => {},
+		}) as unknown as Console;
+		globalThis.console = frozen;
+		let restore: (() => void) | undefined;
+		try {
+			expect(() => { restore = installCursorSdkOutputFilter(); }).not.toThrow();
+			expect(typeof restore).toBe("function");
+		} finally {
+			restore?.();
+			globalThis.console = originalConsole;
+		}
 	});
 
 	it("preserves synthetic failures/quoted controls, prompt bytes, invalid UTF-8, encodings and tails", () => {

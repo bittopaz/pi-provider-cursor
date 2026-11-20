@@ -36,9 +36,9 @@ pi --model cursor/gpt-5.5@1m --thinking medium
 pi --model cursor/grok-4.6:slow
 ```
 
-The `cursor/` prefix selects this provider. `@1m` selects a context window from Cursor's catalog. `--thinking` sets the thinking level when Cursor exposes that control. Models with Cursor's `fast` parameter also have `:fast` and `:slow` choices.
+The `cursor/` prefix selects this provider. `--thinking` sets the thinking level when Cursor exposes that control. The list and picker show one bare row per model at the largest context window it accepts; `@1m` and `:fast` / `:slow` still select those exact variants when you type them.
 
-Run `pi --list-models cursor` to see available canonical models (`PI_CURSOR_MODEL_ALIASES=1` also exposes SDK alias rows to `/model`, `pi --list-models`, and `--models` / `enabledModels` scopes; explicit `--model`, `defaultModel`, and saved sessions resolve unambiguous aliases either way). Startup can use a cached or fallback catalog. A model in the list does not prove that your key works.
+Run `pi --list-models cursor` to see the listed Cursor models, one bare row per model at its largest context window (`PI_CURSOR_MODEL_ALIASES=1` also exposes SDK alias rows to `/model`, `pi --list-models`, and `--models` / `enabledModels` scopes; explicit `--model`, `defaultModel`, and saved sessions resolve unambiguous aliases either way). Startup can use a cached or fallback catalog. A model in the list does not prove that your key works.
 
 Run these commands inside Pi:
 
@@ -50,7 +50,7 @@ Run these commands inside Pi:
 
 For one run, pass `--cursor-fast`, `--cursor-no-fast`, or `--cursor-mode plan`. See the [model reference](docs/reference.md#choosing-a-model) for selection rules and [fast mode](docs/reference.md#fast-mode) for saved preferences.
 
-The footer shows status such as `cursor:local · fast:off`, with `plan` or `http1` when enabled. Set `PI_CURSOR_FOOTER=0` to hide the Cursor status.
+The extension status appears only for Cursor-only state Pi cannot show natively: `cursor:cloud`, `cursor:invalid`, `fast:on`, `plan`, `http1`, or `mode invalid`. A plain local agent session with fast off shows no Cursor status line; set `PI_CURSOR_FOOTER=0` to hide all of it.
 
 ## Tools and settings
 

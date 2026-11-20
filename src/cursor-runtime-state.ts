@@ -164,11 +164,17 @@ export function formatCursorStatus(
 	fast: boolean | undefined,
 	mode: "agent" | "plan" | "invalid",
 	useHttp1ForAgent = false,
-): string {
-	const parts = [`cursor:${runtime}`, fast === true ? "fast:on" : fast === false ? "fast:off" : "fast:n/a"];
+): string | undefined {
+	const parts = [`cursor:${runtime}`];
+	// `fast:on` is the only fast state worth a segment: off is the builtin default
+	// and `fast:n/a` described the absence of a control.
+	if (fast === true) parts.push("fast:on");
 	if (runtime === "local" && useHttp1ForAgent) parts.push("http1");
 	if (mode === "invalid") parts.push("mode invalid");
 	else if (mode === "plan") parts.push("plan");
+	// Local policy: a plain local agent session is Pi's default surface, so it adds
+	// no Cursor status at all. Cloud, invalid, fast-on, http1 and plan still show.
+	if (runtime === "local" && parts.length === 1) return undefined;
 	return parts.join(" · ");
 }
 

@@ -3,15 +3,16 @@
  * and transcript replay builders.
  */
 
+/** Joins an MCP tool name to its preview in an activity summary. */
+export const MCP_SUMMARY_SEPARATOR = " · ";
+
 export interface CursorReplayActivitySummaryOverride {
 	activitySummary?: string;
 }
 
 export interface CursorReplayPathSummaryArgs extends CursorReplayActivitySummaryOverride {
 	path?: string;
-}
-
-export interface CursorReplayReadLintsSummaryArgs extends CursorReplayActivitySummaryOverride {
+}export interface CursorReplayReadLintsSummaryArgs extends CursorReplayActivitySummaryOverride {
 	paths?: string[];
 	path?: string;
 	diagnosticCount?: number;
@@ -176,7 +177,7 @@ export function summarizeReplayTask(args: CursorReplayTaskSummaryArgs | undefine
 export function summarizeReplayMcp(args: CursorReplayMcpSummaryArgs | undefined): string | undefined {
 	const toolName = readCursorReplaySummaryString(args, "toolName") ?? "mcp";
 	const preview = readCursorReplaySummaryString(args, "preview");
-	return preview && preview !== toolName ? `${toolName} · ${preview}` : toolName;
+	return preview && preview !== toolName ? `${toolName}${MCP_SUMMARY_SEPARATOR}${preview}` : toolName;
 }
 
 export function summarizeReplayRecordScreen(args: CursorReplayRecordScreenSummaryArgs | undefined): string | undefined {

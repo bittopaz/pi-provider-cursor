@@ -205,18 +205,33 @@ function getModelName(item: ModelListItem, context?: string, alias?: string, fas
 	return context ? `${baseName} @ ${context}` : baseName;
 }
 
+function omitsExplicitCatalogContext(
+	baseModelId: string | undefined,
+	context: string | undefined,
+	catalogDefaultContext: string | undefined,
+): boolean {
+	return baseModelId === "grok-4.7"
+		&& catalogDefaultContext !== undefined
+		&& context === catalogDefaultContext;
+}
+
 function getContextWindow(
 	contextWindowCache: Map<string, number>,
 	selectionKeys: readonly string[],
 	context?: string,
 	baseModelId?: string,
+	catalogDefaultContext?: string,
 ): number {
+	const parsed = context ? parseContextWindow(context) : undefined;
+	if (omitsExplicitCatalogContext(baseModelId, context, catalogDefaultContext) && parsed !== undefined) {
+		return parsed;
+	}
 	for (const key of new Set(selectionKeys)) {
 		const contextWindow = contextWindowCache.get(key);
 		if (contextWindow !== undefined) return contextWindow;
 	}
 	return (
-		(context ? parseContextWindow(context) : undefined) ??
+		parsed ??
 		(baseModelId ? contextWindowCache.get(baseModelId) : undefined) ??
 		contextWindowCache.get("default") ??
 		FALLBACK_CONTEXT_WINDOW
@@ -235,15 +250,16 @@ function toMetadata(
 ): CursorModelMetadata {
 	const thinkingLevelMap = getThinkingLevelMap(item);
 	const fastValue = getParamValue(defaultParams, "fast")?.toLowerCase();
+	const catalogDefaultContext = getParamValue(getDefaultParams(item), "context");
 	return {
 		piModelId,
 		baseModelId: item.id,
 		selectionModelId,
 		displayName: item.displayName || item.id,
 		defaultParams: cloneParams(defaultParams),
-		catalogDefaultContext: getParamValue(getDefaultParams(item), "context"),
+		catalogDefaultContext,
 		...(context ? { context } : {}),
-		contextWindow: getContextWindow(contextWindowCache, contextWindowKeys, context, item.id),
+		contextWindow: getContextWindow(contextWindowCache, contextWindowKeys, context, item.id, catalogDefaultContext),
 		supportsFast: getParameter(item, "fast") !== undefined,
 		defaultFast: fastValue === "true",
 		...(fastOverride !== undefined ? { fastOverride } : {}),
@@ -273,31 +289,130 @@ function toModelConfig(metadata: CursorModelMetadata, name: string): ProviderMod
 	};
 }
 
+type CursorModelSelectionIdentity = ReturnType<typeof getCursorModelSelectionIdentities>[number];
+
+interface RegisteredIdentity {
+	identity: CursorModelSelectionIdentity;
+	metadata: CursorModelMetadata;
+}
+
+function createIdentityMetadata(
+	{ model: item, selectionModelId, context, fastOverride, piModelId, contextWindowKey, baseContextWindowKey }: CursorModelSelectionIdentity,
+	contextWindowCache: Map<string, number>,
+): CursorModelMetadata {
+	const defaultParams = getDefaultParams(item);
+	const contextParams = context ? replaceParam(defaultParams, "context", context) : defaultParams;
+	const params = fastOverride === undefined ? contextParams : replaceParam(contextParams, "fast", fastOverride ? "true" : "false");
+	return toMetadata(
+		item,
+		piModelId,
+		selectionModelId,
+		params,
+		context,
+		contextWindowCache,
+		[piModelId, contextWindowKey, baseContextWindowKey],
+		fastOverride,
+	);
+}
+
+function getIdentityName({ model: item, selectionModelId, context, fastOverride }: CursorModelSelectionIdentity): string {
+	const alias = selectionModelId === item.id ? undefined : selectionModelId;
+	return getModelName(item, context, alias, fastOverride);
+}
+
+/** True when `candidate` should replace `incumbent` as a model's single listed row. */
+function prefersListedIdentity(candidate: RegisteredIdentity, incumbent: RegisteredIdentity): boolean {
+	const window = candidate.metadata.contextWindow;
+	const incumbentWindow = incumbent.metadata.contextWindow;
+	if (window !== incumbentWindow) return window > incumbentWindow;
+	const { catalogDefaultContext } = candidate.metadata;
+	return catalogDefaultContext !== undefined
+		&& candidate.identity.context === catalogDefaultContext
+		&& incumbent.identity.context !== catalogDefaultContext;
+}
+
+/**
+ * The listed row for one selectable id: the non-speed context variant with the largest effective
+ * window, so `/model` and `--list-models` show one row at the biggest window the model accepts.
+ */
+function selectListedIdentity(entries: readonly RegisteredIdentity[]): RegisteredIdentity | undefined {
+	let listed: RegisteredIdentity | undefined;
+	for (const entry of entries) {
+		if (entry.identity.fastOverride !== undefined) continue;
+		if (!listed || prefersListedIdentity(entry, listed)) listed = entry;
+	}
+	return listed;
+}
+
+/**
+ * The bare selectable id carrying a variant's params and window, with no context or speed qualifier.
+ * The qualifier-free identity names the row as the model itself; the metadata keeps the variant's
+ * `context`, so an explicit selection still sends that variant.
+ */
+function toListedIdentity({ identity, metadata }: RegisteredIdentity): RegisteredIdentity {
+	const { model, selectionModelId, contextWindowKey, baseContextWindowKey } = identity;
+	return {
+		identity: { model, selectionModelId, piModelId: selectionModelId, contextWindowKey, baseContextWindowKey },
+		metadata: {
+			...metadata,
+			piModelId: selectionModelId,
+			defaultParams: cloneParams(metadata.defaultParams),
+			...(metadata.thinkingLevelMap ? { thinkingLevelMap: { ...metadata.thinkingLevelMap } } : {}),
+		},
+	};
+}
+
 function registerModelItems(items: ModelListItem[], metadataMap = metadataByPiModelId): ProviderModelConfig[] {
 	metadataMap.clear();
 	const contextWindowCache = loadContextWindowCache();
-	return getCursorModelSelectionIdentities(items).map(({ model: item, selectionModelId, context, fastOverride, piModelId, contextWindowKey, baseContextWindowKey }) => {
-		const defaultParams = getDefaultParams(item);
-		const contextParams = context ? replaceParam(defaultParams, "context", context) : defaultParams;
-		const params = fastOverride === undefined ? contextParams : replaceParam(contextParams, "fast", fastOverride ? "true" : "false");
-		const metadata = toMetadata(
-			item,
-			piModelId,
-			selectionModelId,
-			params,
-			context,
-			contextWindowCache,
-			[piModelId, contextWindowKey, baseContextWindowKey],
-			fastOverride,
-		);
-		metadataMap.set(piModelId, metadata);
-		const alias = selectionModelId === item.id ? undefined : selectionModelId;
-		return toModelConfig(metadata, getModelName(item, context, alias, fastOverride));
-	});
+	const identitiesBySelectionId = new Map<string, RegisteredIdentity[]>();
+	for (const identity of getCursorModelSelectionIdentities(items)) {
+		const entry = { identity, metadata: createIdentityMetadata(identity, contextWindowCache) };
+		const group = identitiesBySelectionId.get(identity.selectionModelId);
+		if (group) group.push(entry);
+		else identitiesBySelectionId.set(identity.selectionModelId, [entry]);
+	}
+
+	const models: ProviderModelConfig[] = [];
+	for (const entries of identitiesBySelectionId.values()) {
+		const listed = selectListedIdentity(entries);
+		if (listed && listed.identity.piModelId !== listed.identity.selectionModelId) {
+			const bare = toListedIdentity(listed);
+			metadataMap.set(bare.metadata.piModelId, bare.metadata);
+			models.push(toModelConfig(bare.metadata, getIdentityName(bare.identity)));
+		}
+		for (const entry of entries) {
+			metadataMap.set(entry.metadata.piModelId, entry.metadata);
+			models.push(toModelConfig(entry.metadata, getIdentityName(entry.identity)));
+		}
+	}
+	return models;
+}
+
+/**
+ * Whether the picker and `--list-models` show `modelId`. Variant identities stay registered for
+ * explicit selection, but only a bare `selectionModelId` row is listed; bare alias rows also need
+ * `PI_CURSOR_MODEL_ALIASES`. Ids outside the catalog metadata are left alone.
+ */
+export function isListedCursorModelId(
+	modelId: string,
+	metadataById: ReadonlyMap<string, Pick<CursorModelMetadata, "baseModelId" | "selectionModelId">>,
+	includeAliases: boolean,
+): boolean {
+	const metadata = metadataById.get(modelId);
+	if (!metadata) return true;
+	if (modelId !== metadata.selectionModelId) return false;
+	return includeAliases || metadata.selectionModelId === metadata.baseModelId;
 }
 
 export function getCursorModelMetadata(modelId: string): CursorModelMetadata | undefined {
 	return metadataByPiModelId.get(modelId);
+}
+
+export function recordsCheckpointContextWindow(modelId: string): boolean {
+	const metadata = getCursorModelMetadata(modelId);
+	if (!metadata) return true;
+	return !omitsExplicitCatalogContext(metadata.baseModelId, metadata.context, metadata.catalogDefaultContext);
 }
 
 /** Plain snapshot so another extension copy can install the serving catalog's capabilities. */
@@ -372,14 +487,18 @@ export function buildCursorModelSelection(
 	const params = cloneParams(metadata.defaultParams);
 	applyThinkingLevel(metadata, params, thinkingLevel);
 
-	if (metadata.supportsFast && fastEnabled !== undefined) {
-		setParam(params, "fast", fastEnabled ? "true" : "false");
+	if (metadata.supportsFast) {
+		// Local policy: a catalog `fast=true` default never bills fast on its own.
+		// An unresolved preference (cloud runtime, summary turns, subagent entries
+		// without `fast`) sends `false`; the caller's explicit opt-in and a
+		// `:fast`/`:slow` model identity still win.
+		const resolvedFast = fastEnabled ?? metadata.fastOverride;
+		setParam(params, "fast", resolvedFast === true ? "true" : "false");
 	}
 
-	// Grok 4.7 rejects its explicit catalog-default context. Keep the selected
-	// variant's metadata intact and leave effort, fast and other contexts explicit.
-	if (metadata.baseModelId === "grok-4.7" && metadata.catalogDefaultContext !== undefined &&
-		getParamValue(params, "context") === metadata.catalogDefaultContext) {
+	// Grok 4.7 rejects its explicit catalog-default context. Omit that param
+	// on the wire. The checkpoint from that request is not this variant's window.
+	if (omitsExplicitCatalogContext(metadata.baseModelId, getParamValue(params, "context"), metadata.catalogDefaultContext)) {
 		deleteParam(params, "context");
 	}
 

@@ -27,6 +27,7 @@ vi.mock("../src/cursor-sdk-runtime.js", () => ({
 vi.mock("../src/context-window-cache.js", () => ({
 	getCheckpointContextWindow: (checkpoint: unknown) =>
 		(checkpoint as { tokenDetails?: { maxTokens?: number } } | null)?.tokenDetails?.maxTokens,
+	loadContextWindowCache: () => new Map(),
 	saveCachedContextWindow,
 }));
 
@@ -180,4 +181,44 @@ describe("cacheSdkContextWindow", () => {
 		expect(loadLatest).toHaveBeenCalledWith("agent-1");
 		expect(saveCachedContextWindow).toHaveBeenCalledWith("composer-2.5", 200_000);
 	});
+
+	it("does not record a checkpoint for the Grok 4.7 context that is omitted on the wire", async () => {
+		const { __testUtils } = await import("../src/model-discovery.js");
+		__testUtils.registerModelItems([grok47Catalog()]);
+
+		await cacheSdkContextWindow("agent-1", "grok-4.7@500k", "/repo");
+
+		expect(createAgentPlatform).not.toHaveBeenCalled();
+		expect(saveCachedContextWindow).not.toHaveBeenCalled();
+	});
+
+	it("records a checkpoint for an explicit Grok 4.7 context", async () => {
+		const { __testUtils } = await import("../src/model-discovery.js");
+		__testUtils.registerModelItems([grok47Catalog()]);
+
+		await cacheSdkContextWindow("agent-1", "grok-4.7@256k", "/repo");
+
+		expect(saveCachedContextWindow).toHaveBeenCalledWith("grok-4.7@256k", 200_000);
+	});
 });
+
+function grok47Catalog() {
+	return {
+		id: "grok-4.7",
+		displayName: "Grok 4.7",
+		parameters: [
+			{ id: "context", displayName: "Context", values: [{ value: "256k" }, { value: "500k" }] },
+			{ id: "reasoning_effort", displayName: "Effort", values: [{ value: "high" }] },
+			{ id: "fast", displayName: "Fast", values: [{ value: "false" }, { value: "true" }] },
+		],
+		variants: [{
+			displayName: "Grok 4.7",
+			isDefault: true,
+			params: [
+				{ id: "context", value: "500k" },
+				{ id: "reasoning_effort", value: "high" },
+				{ id: "fast", value: "true" },
+			],
+		}],
+	};
+}

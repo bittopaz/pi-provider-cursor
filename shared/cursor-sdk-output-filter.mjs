@@ -12,6 +12,15 @@ const state = process[STATE] ??= {
 };
 const cursorSdkOutputSuppression = state.suppression;
 const noticeOwner = state.noticeOwner;
+// A compiled Bun host (official `pi` release binary) resolves the SDK logger's
+// `console` calls against its own writer, so those bytes never reach the process
+// sinks below; console methods are the only interception point there.
+// Wrapper bookkeeping is keyed by the console object it bound, so a reload
+// restores what it installed and a replaced console is rebound.
+state.consoleBindings ??= new Map();
+const CONSOLE_METHODS = ["log", "info", "warn", "error"];
+// Recursion guard for a notice owner that echoes a frame back into the filter.
+const deciding = state.deciding ??= { depth: 0 };
 // ponytail: larger frames pass unchanged. Raise this cap for a captured larger
 // SDK frame, or use a public SDK sink when unbounded suppression is required.
 const MAX_CANDIDATE_BYTES = 16 * 1024;
@@ -121,20 +130,34 @@ function possibleDiagnostic(text) {
 // which alone holds a split UTF-8 tail.
 const EMPTY = { kind: "empty" }, TRANSPARENT = { kind: "transparent" };
 
+// One framing decision for every entry point. A classified frame belongs to its
+// notice owner, which may render it itself; anything else stays visible unless
+// the creating `Agent.create()` mute still covers it. Callers detach the frame
+// first: a notice handler may write to the same sink.
+function decideFrame({ kind, owner, suppressed }) {
+	if (kind === "noise") return false;
+	// A notice owner may echo the frame it is deciding back through the same
+	// console or sink. Deciding that nested frame again would report forever.
+	if (deciding.depth > 0) return Boolean(kind) || !suppressed;
+	let reported = false;
+	deciding.depth += 1;
+	try {
+		if (kind && owner) {
+			// A failed native notice must not turn a capability warning into silence.
+			try {
+				reported = cursorSdkOutputSuppression.run(false, () => owner(kind, CURSOR_SDK_CAPABILITY_NOTICES[kind])) !== false;
+			} catch { reported = false; }
+		}
+	} finally { deciding.depth -= 1; }
+	return !reported && (Boolean(kind) || !suppressed);
+}
+
 function createFilteredProcessWrite(write, stream) {
 	let parser = EMPTY;
-	// Callers detach the frame first: a notice handler may write to this sink.
 	function finish(frame, output) {
 		const original = Buffer.concat(frame.chunks);
 		const kind = isUtf8(original) ? classify(frame.text + frame.decoder.end()) : undefined;
-		let handled = kind === "noise";
-		if (kind && kind !== "noise" && frame.owner) {
-			// A failed native notice must not turn a capability warning into silence.
-			try {
-				handled = cursorSdkOutputSuppression.run(false, () => frame.owner(kind, CURSOR_SDK_CAPABILITY_NOTICES[kind])) !== false;
-			} catch { handled = false; }
-		}
-		if (!handled && (kind || !frame.suppressed)) output.push(original);
+		if (decideFrame({ kind, owner: frame.owner, suppressed: frame.suppressed })) output.push(original);
 	}
 	const filteredWrite = (chunk, encodingOrCallback, callback) => {
 		if (parser.kind === "transparent") return write.call(stream, chunk, encodingOrCallback, callback);
@@ -186,6 +209,72 @@ function createFilteredProcessWrite(write, stream) {
 	};
 }
 
+// The console facade makes the same decision, but a console call is one complete
+// frame. A compiled Bun host resolves `console` against its own writer, so these
+// methods are the only interception point there. A diagnostic-shaped single line
+// goes to the owning sink, which stays the only place that classifies, reports
+// notices, and applies the mute. `entry.active` makes a released wrapper
+// transparent even if a later owner still holds it.
+function createFilteredConsoleMethod(original, entry, streamName) {
+	return function (...args) {
+		if (!entry.active) return original.apply(this, args);
+		const muted = isCursorSdkOutputSuppressed();
+		const single = args.length === 1 && typeof args[0] === "string";
+		const line = single ? args[0].replace(/\r?\n$/, "") : "";
+		// Outside a mute only a single diagnostic line belongs to this layer; the
+		// host keeps its own formatting for everything else. A mute covers every
+		// frame the sink would drop, recognizable or not.
+		const framed = single && !/[\r\n]/.test(line) && (muted || possibleDiagnostic(line));
+		if (!framed) return muted ? undefined : original.apply(this, args);
+		const sink = state.sinks?.[streamName === "stderr" ? 1 : 0];
+		if (!sink) return original.apply(this, args);
+		// Flushing first keeps a pending sink frame's bytes in place, then the sink
+		// decides this frame like any other. A CRLF-terminated line keeps its own
+		// separator, so a re-emitted frame is byte-identical to the host's.
+		sink.flush();
+		sink.write(args[0].endsWith("\n") ? args[0] : `${line}\n`);
+	};
+}
+
+function installConsoleFilter() {
+	const target = globalThis.console;
+	if (!target) return;
+	// A host may swap its console object (TUI Console, worker stdio) or replace a
+	// single method. Retire wrappers that are no longer installed and rebind the
+	// target, so neither leaves SDK frames filtered only by luck.
+	for (const [bound, binding] of state.consoleBindings) {
+		for (const [method, entry] of Object.entries(binding)) {
+			if (bound[method] !== entry.wrapper) { entry.active = false; delete binding[method]; }
+		}
+		if (!Object.keys(binding).length) state.consoleBindings.delete(bound);
+	}
+	const binding = state.consoleBindings.get(target) ?? {};
+	for (const method of CONSOLE_METHODS) {
+		if (binding[method]) continue;
+		const original = target[method];
+		if (typeof original !== "function") continue;
+		const entry = { original, wrapper: undefined, active: false };
+		entry.wrapper = createFilteredConsoleMethod(original, entry, method === "warn" || method === "error" ? "stderr" : "stdout");
+		// A frozen or hardened console must not break extension load or leave a
+		// patched sink with no cleanup behind it.
+		try { target[method] = entry.wrapper; } catch { continue; }
+		entry.active = true;
+		binding[method] = entry;
+	}
+	if (Object.keys(binding).length) state.consoleBindings.set(target, binding);
+}
+
+function restoreConsoleFilter() {
+	for (const [target, binding] of state.consoleBindings) {
+		for (const [method, entry] of Object.entries(binding)) {
+			entry.active = false;
+			// A later owner may have replaced the method; never undo their wrapper.
+			if (target[method] === entry.wrapper) target[method] = entry.original;
+		}
+	}
+	state.consoleBindings = new Map();
+}
+
 export function installCursorSdkOutputFilter() {
 	if (state.installs === 0) {
 		state.originals = { stdoutWrite: process.stdout.write, stderrWrite: process.stderr.write };
@@ -194,6 +283,9 @@ export function installCursorSdkOutputFilter() {
 		process.stderr.write = state.sinks[1].write;
 	}
 	state.installs += 1;
+	// Bind (or rebind after a host console swap) on every lease, so a replaced
+	// console object does not leave SDK frames unfiltered for the process lifetime.
+	installConsoleFilter();
 	let restored = false;
 	return () => {
 		if (restored) return;
@@ -206,6 +298,7 @@ export function installCursorSdkOutputFilter() {
 		if (process.stderr.write === state.sinks[1].write) process.stderr.write = state.originals.stderrWrite;
 		const finishing = state.sinks;
 		state.sinks = state.originals = undefined;
+		restoreConsoleFilter();
 		for (const sink of finishing) sink.restore();
 	};
 }

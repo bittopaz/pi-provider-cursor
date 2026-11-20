@@ -23,7 +23,7 @@ describe("custom subagent model selections", () => {
 		["alias@large:slow", true, "high", "alias", "large", "high", "false"],
 		["fixture@small:fast", false, "medium", "fixture", "small", "medium", "true"],
 		["fixture@large", false, "off", "fixture", "large", "none", "false"],
-		["fixture@small", undefined, "off", "fixture", "small", "none", "true"],
+		["fixture@small", undefined, "off", "fixture", "small", "none", "false"],
 	] as const)("selects %s independently of parent controls", (model, fast, thinking, id, context, reasoning, speed) => {
 		expect(buildCursorCustomSubagentDefinitions({ reviewer: { description: "D", prompt: "P", model, fast, thinking } })).toEqual({
 			reviewer: { description: "D", prompt: "P", model: { id, params: [

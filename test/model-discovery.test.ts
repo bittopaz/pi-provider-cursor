@@ -6,6 +6,7 @@ import {
 	discoverModels,
 	buildCursorModelSelection,
 	getCursorModelMetadata,
+	isListedCursorModelId,
 	__testUtils,
 	type CursorModelFallbackIssue,
 } from "../src/model-discovery.js";
@@ -136,10 +137,15 @@ describe("discoverModels", () => {
 		const models = await discoverModels({ apiKey: process.env.CURSOR_API_KEY });
 
 		expect(mockedList).toHaveBeenCalledExactlyOnceWith({ apiKey: "test-key-123" });
-		expect(models[0].name).toBe("A Model @ 300k");
-		expect(models.map((model) => model.id)).toEqual(["a-model@300k", "a-model@1m", "z-model@long", "z-model@short"]);
+		expect(models.map((model) => model.id)).toEqual(["a-model", "a-model@300k", "a-model@1m", "z-model", "z-model@long", "z-model@short"]);
+		// The listed row is the non-speed variant with the largest window.
+		expect(models[0].name).toBe("A Model");
+		expect(models[0].contextWindow).toBe(1000000);
+		expect(models.find((model) => model.id === "a-model@300k")?.name).toBe("A Model @ 300k");
+		expect(getCursorModelMetadata("a-model")?.defaultParams).toEqual([{ id: "context", value: "1m" }]);
 		expect(getCursorModelMetadata("a-model@300k")?.defaultParams).toEqual([{ id: "context", value: "300k" }]);
 		expect(getCursorModelMetadata("z-model@long")?.defaultParams).toEqual([{ id: "context", value: "long" }]);
+		expect(getCursorModelMetadata("z-model")?.defaultParams).toEqual([{ id: "context", value: "short" }]);
 	});
 
 	it("registers Cursor model aliases with the same params and context variants", async () => {
@@ -168,8 +174,18 @@ describe("discoverModels", () => {
 
 		const models = await discoverModels({ apiKey: process.env.CURSOR_API_KEY });
 
-		expect(models.map((model) => model.id)).toEqual(["gpt-5.5@1m", "gpt-5.5@272k", "gpt-latest@1m", "gpt-latest@272k"]);
-		expect(models[2].name).toBe("GPT-5.5 (gpt-latest) @ 1m");
+		expect(models.map((model) => model.id)).toEqual([
+			"gpt-5.5", "gpt-5.5@1m", "gpt-5.5@272k",
+			"gpt-latest", "gpt-latest@1m", "gpt-latest@272k",
+		]);
+		expect(models[3].name).toBe("GPT-5.5 (gpt-latest)");
+		expect(models[4].name).toBe("GPT-5.5 (gpt-latest) @ 1m");
+		expect(getCursorModelMetadata("gpt-latest")).toMatchObject({
+			baseModelId: "gpt-5.5",
+			selectionModelId: "gpt-latest",
+			context: "1m",
+			contextWindow: 1000000,
+		});
 		expect(getCursorModelMetadata("gpt-latest@272k")).toMatchObject({
 			baseModelId: "gpt-5.5",
 			selectionModelId: "gpt-latest",
@@ -233,6 +249,7 @@ describe("discoverModels", () => {
 		]);
 		const models = await discoverModels({ apiKey: process.env.CURSOR_API_KEY });
 		expect(models.map((model) => model.id)).toEqual([
+			"gpt-5.4",
 			"gpt-5.4@272k",
 			"gpt-5.4@272k:fast",
 			"gpt-5.4@272k:slow",
@@ -240,12 +257,35 @@ describe("discoverModels", () => {
 			"gpt-5.4@1m:fast",
 			"gpt-5.4@1m:slow",
 		]);
-		expect(models[0].contextWindow).toBe(272000);
+		// The listed row takes the largest window and stays off the speed axis.
+		expect(models[0].contextWindow).toBe(1000000);
+		expect(models[0].name).toBe("GPT-5.4");
 		expect(models[1].contextWindow).toBe(272000);
-		expect(models[3].contextWindow).toBe(1000000);
-		expect(models[0].name).toBe("GPT-5.4 @ 272k");
-		expect(models[1].name).toBe("GPT-5.4 (fast) @ 272k");
-		expect(models[2].name).toBe("GPT-5.4 (slow) @ 272k");
+		expect(models[2].contextWindow).toBe(272000);
+		expect(models[4].contextWindow).toBe(1000000);
+		expect(models[1].name).toBe("GPT-5.4 @ 272k");
+		expect(models[2].name).toBe("GPT-5.4 (fast) @ 272k");
+		expect(models[3].name).toBe("GPT-5.4 (slow) @ 272k");
+		expect(getCursorModelMetadata("gpt-5.4")).toMatchObject({
+			baseModelId: "gpt-5.4",
+			selectionModelId: "gpt-5.4",
+			context: "1m",
+			catalogDefaultContext: "1m",
+		});
+		expect(getCursorModelMetadata("gpt-5.4")?.fastOverride).toBeUndefined();
+		expect(getCursorModelMetadata("gpt-5.4")?.defaultParams).toEqual([
+			{ id: "context", value: "1m" },
+			{ id: "reasoning", value: "medium" },
+			{ id: "fast", value: "false" },
+		]);
+		expect(buildCursorModelSelection("gpt-5.4", "medium")).toEqual({
+			id: "gpt-5.4",
+			params: [
+				{ id: "context", value: "1m" },
+				{ id: "reasoning", value: "medium" },
+				{ id: "fast", value: "false" },
+			],
+		});
 
 		const metadata = getCursorModelMetadata("gpt-5.4@272k");
 		expect(metadata).toMatchObject({
@@ -390,9 +430,81 @@ describe("discoverModels", () => {
 		const models = await discoverModels({ apiKey: process.env.CURSOR_API_KEY });
 
 		expect(models.map((model) => [model.id, model.contextWindow])).toEqual([
+			["gpt-5.5", 950000],
 			["gpt-5.5@1m", 950000],
 			["gpt-5.5@272k", 272000],
 		]);
+	});
+
+	it("keeps Grok 4.7's catalog context when the checkpoint omitted that parameter", () => {
+		saveCachedContextWindow("grok-4.7", 256000);
+		saveCachedContextWindow("grok-4.7@500k", 256000);
+		saveCachedContextWindow("grok-4.7@500k:slow", 256000);
+		saveCachedContextWindow("grok-4.7@500k:fast", 256000);
+		saveCachedContextWindow("grok-4.7@256k", 240000);
+		const windows = Object.fromEntries(register([{
+			id: "grok-4.7",
+			displayName: "Grok 4.7",
+			parameters: [
+				{ id: "context", displayName: "Context", values: [{ value: "256k" }, { value: "500k" }] },
+				{ id: "fast", displayName: "Fast", values: [{ value: "false" }, { value: "true" }] },
+			],
+			variants: [{
+				displayName: "Grok 4.7",
+				isDefault: true,
+				params: [
+					{ id: "context", value: "500k" },
+					{ id: "fast", value: "true" },
+				],
+			}],
+		}]).map(({ id, contextWindow }) => [id, contextWindow]));
+
+		expect(windows["grok-4.7@500k"]).toBe(500000);
+		expect(windows["grok-4.7@500k:fast"]).toBe(500000);
+		expect(windows["grok-4.7@500k:slow"]).toBe(500000);
+		expect(windows["grok-4.7@256k"]).toBe(240000);
+	});
+
+	it("lists Grok 4.7 once at its largest window while the bare id still omits the default context", () => {
+		const models = register([{
+			id: "grok-4.7",
+			displayName: "Grok 4.7",
+			parameters: [
+				{ id: "context", displayName: "Context", values: [{ value: "256k" }, { value: "500k" }] },
+				{ id: "reasoning_effort", displayName: "Effort", values: [{ value: "low" }, { value: "high" }] },
+				{ id: "fast", displayName: "Fast", values: [{ value: "false" }, { value: "true" }] },
+			],
+			variants: [{
+				displayName: "Grok 4.7",
+				isDefault: true,
+				params: [
+					{ id: "context", value: "500k" },
+					{ id: "reasoning_effort", value: "high" },
+					{ id: "fast", value: "true" },
+				],
+			}],
+		}]);
+
+		const listed = models.find((model) => model.id === "grok-4.7");
+		expect(listed).toMatchObject({ name: "Grok 4.7", contextWindow: 500000 });
+		expect(listed?.name).not.toMatch(/@|fast|slow/);
+		expect(models.map(({ id }) => id)).toContain("grok-4.7@256k");
+		expect(models.map(({ id }) => id)).toContain("grok-4.7@500k:slow");
+		expect(getCursorModelMetadata("grok-4.7")).toMatchObject({
+			baseModelId: "grok-4.7",
+			selectionModelId: "grok-4.7",
+			context: "500k",
+			catalogDefaultContext: "500k",
+			contextWindow: 500000,
+		});
+		expect(getCursorModelMetadata("grok-4.7")?.fastOverride).toBeUndefined();
+		expect(buildCursorModelSelection("grok-4.7", "high")).toEqual({
+			id: "grok-4.7",
+			params: [
+				{ id: "reasoning_effort", value: "high" },
+				{ id: "fast", value: "false" },
+			],
+		});
 	});
 
 	it("inherits base context and fast evidence for aliases without exact observations", () => {
@@ -594,9 +706,11 @@ describe("discoverModels", () => {
 		const models = await discoverModels({ apiKey: process.env.CURSOR_API_KEY });
 
 		expect(models.map((model) => [model.id, model.contextWindow])).toEqual([
+			["claude-like", 1000000],
 			["claude-like@300k", 300000],
 			["claude-like@1m", 1000000],
 		]);
+		// The listed row copies the largest variant's params and keeps the thinking column.
 		expect(models[0].thinkingLevelMap).toEqual({
 			off: "false",
 			minimal: null,
@@ -656,4 +770,29 @@ describe("discoverModels", () => {
 		});
 	});
 
+});
+
+describe("isListedCursorModelId", () => {
+	const metadata = (piModelId: string, baseModelId: string, selectionModelId: string) =>
+		[piModelId, { baseModelId, selectionModelId }] as const;
+	const byId = new Map([
+		metadata("grok-4.7", "grok-4.7", "grok-4.7"),
+		metadata("grok-4.7@256k", "grok-4.7", "grok-4.7"),
+		metadata("grok-4.7@500k", "grok-4.7", "grok-4.7"),
+		metadata("grok-4.7@500k:fast", "grok-4.7", "grok-4.7"),
+		metadata("grok-latest", "grok-4.7", "grok-latest"),
+		metadata("grok-latest@500k", "grok-4.7", "grok-latest"),
+	]);
+
+	it("keeps only the bare catalog id when aliases are hidden", () => {
+		expect([...byId.keys()].filter((id) => isListedCursorModelId(id, byId, false))).toEqual(["grok-4.7"]);
+	});
+
+	it("adds the bare alias id but no context or speed rows when aliases are shown", () => {
+		expect([...byId.keys()].filter((id) => isListedCursorModelId(id, byId, true))).toEqual(["grok-4.7", "grok-latest"]);
+	});
+
+	it("leaves unknown ids listed", () => {
+		expect(isListedCursorModelId("gemini-3.1-pro", byId, false)).toBe(true);
+	});
 });

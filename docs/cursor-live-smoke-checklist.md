@@ -112,6 +112,7 @@ Pass criteria:
 - stdout includes `PRODUCT=42`.
 - stderr is empty.
 - No Cursor SDK settings/skills startup logs corrupt stdout or the TUI.
+- Run at least once under the compiled Bun `pi` binary you ship with, not only a Node-hosted run: that binary writes SDK `console` frames outside `process.stdout.write`, so a sink-only filter looks correct under Node while leaking `CursorPluginsAgentSkillsService load completed` / `AgentSkillsCursorRulesService load completed` frames in the real CLI.
 
 ## 3. TUI observation check
 
@@ -127,7 +128,7 @@ Observe with `tmux capture-pane -pt "$SESSION"` or attach manually.
 
 Pass criteria:
 
-- Footer shows `(cursor) composer-2-5`. With `--cursor-no-fast`, Cursor fast mode is off and the Cursor extension status should show `cursor:local · fast:off`; ignore unrelated status text from other extensions.
+- Footer shows `(cursor) composer-2-5`. With `--cursor-no-fast`, Cursor fast mode is off and a plain local agent session shows no Cursor extension status line; ignore unrelated status text from other extensions.
 - The run uses supported Pi `--session-id` successfully.
 - Assistant answer appears correctly.
 - `/session` shows one user and one assistant message for the simple run.

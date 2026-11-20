@@ -6,6 +6,7 @@ import {
 	type CursorCloudRunReport,
 } from "./cursor-cloud-reporting.js";
 import { getCheckpointContextWindow, saveCachedContextWindow } from "./context-window-cache.js";
+import { recordsCheckpointContextWindow } from "./model-discovery.js";
 import { scrubSensitiveText } from "./cursor-sensitive-text.js";
 import type { CursorSdkEventDebugSink } from "./cursor-sdk-event-debug.js";
 import type { CursorSdkTurnCoordinator } from "./cursor-provider-turn-coordinator.js";
@@ -24,6 +25,7 @@ export async function cacheSdkContextWindow(
 	cwd?: string,
 	store?: LocalAgentStore,
 ): Promise<void> {
+	if (!recordsCheckpointContextWindow(modelId)) return;
 	try {
 		const { createAgentPlatform } = await loadCursorSdk();
 		const platform = await createAgentPlatform(

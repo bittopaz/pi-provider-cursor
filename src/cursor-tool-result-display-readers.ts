@@ -1,6 +1,7 @@
 import { asRecord, getArray, getNumber, getRecord, getString, stringifyUnknown } from "./cursor-record-utils.js";
 import { summarizeCursorCompactConversationToolCall } from "./cursor-compact-tool-summary.js";
 import { scrubSensitiveText } from "./cursor-sensitive-text.js";
+import { previewFromText } from "./cursor-structured-summary.js";
 import { firstNonEmptyLine, formatDisplayPath, truncateArg } from "./cursor-transcript-utils.js";
 
 export interface CursorToolResultLike {
@@ -153,6 +154,13 @@ export interface McpDisplayResult {
 	preview?: string;
 }
 
+/** Summary text for one MCP content part, or undefined when it carries nothing readable. */
+function mcpPartPreview(text: string): string | undefined {
+	const scrubbed = scrubSensitiveText(text);
+	const preview = previewFromText(scrubbed, 120);
+	return preview ? scrubSensitiveText(preview) : undefined;
+}
+
 export function readMcpDisplayResult(result: CursorToolResultLike): McpDisplayResult {
 	if (result.status === "error") {
 		return { isToolError: false, text: "", nonTextSummary: "", body: "" };
@@ -169,8 +177,7 @@ export function readMcpDisplayResult(result: CursorToolResultLike): McpDisplayRe
 		const text = getMcpContentText(entry);
 		if (text) {
 			textParts.push(text);
-			const line = firstNonEmptyLine(text);
-			if (!preview && line) preview = truncateArg(scrubSensitiveText(line), 120);
+			if (!preview) preview = mcpPartPreview(text);
 			continue;
 		}
 		nonTextParts.push(describeNonTextMcpContent(entry));
