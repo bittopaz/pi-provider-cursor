@@ -395,6 +395,35 @@ describe("discoverModels", () => {
 		]);
 	});
 
+	it("keeps Grok 4.7's catalog context when the checkpoint omitted that parameter", () => {
+		saveCachedContextWindow("grok-4.7", 256000);
+		saveCachedContextWindow("grok-4.7@500k", 256000);
+		saveCachedContextWindow("grok-4.7@500k:slow", 256000);
+		saveCachedContextWindow("grok-4.7@500k:fast", 256000);
+		saveCachedContextWindow("grok-4.7@256k", 240000);
+		const windows = Object.fromEntries(register([{
+			id: "grok-4.7",
+			displayName: "Grok 4.7",
+			parameters: [
+				{ id: "context", displayName: "Context", values: [{ value: "256k" }, { value: "500k" }] },
+				{ id: "fast", displayName: "Fast", values: [{ value: "false" }, { value: "true" }] },
+			],
+			variants: [{
+				displayName: "Grok 4.7",
+				isDefault: true,
+				params: [
+					{ id: "context", value: "500k" },
+					{ id: "fast", value: "true" },
+				],
+			}],
+		}]).map(({ id, contextWindow }) => [id, contextWindow]));
+
+		expect(windows["grok-4.7@500k"]).toBe(500000);
+		expect(windows["grok-4.7@500k:fast"]).toBe(500000);
+		expect(windows["grok-4.7@500k:slow"]).toBe(500000);
+		expect(windows["grok-4.7@256k"]).toBe(240000);
+	});
+
 	it("inherits base context and fast evidence for aliases without exact observations", () => {
 		saveCachedContextWindow("base-context-model@1m", 300000);
 		saveCachedContextWindow("base-context-model@1m:fast", 320000);

@@ -205,18 +205,33 @@ function getModelName(item: ModelListItem, context?: string, alias?: string, fas
 	return context ? `${baseName} @ ${context}` : baseName;
 }
 
+function omitsExplicitCatalogContext(
+	baseModelId: string | undefined,
+	context: string | undefined,
+	catalogDefaultContext: string | undefined,
+): boolean {
+	return baseModelId === "grok-4.7"
+		&& catalogDefaultContext !== undefined
+		&& context === catalogDefaultContext;
+}
+
 function getContextWindow(
 	contextWindowCache: Map<string, number>,
 	selectionKeys: readonly string[],
 	context?: string,
 	baseModelId?: string,
+	catalogDefaultContext?: string,
 ): number {
+	const parsed = context ? parseContextWindow(context) : undefined;
+	if (omitsExplicitCatalogContext(baseModelId, context, catalogDefaultContext) && parsed !== undefined) {
+		return parsed;
+	}
 	for (const key of new Set(selectionKeys)) {
 		const contextWindow = contextWindowCache.get(key);
 		if (contextWindow !== undefined) return contextWindow;
 	}
 	return (
-		(context ? parseContextWindow(context) : undefined) ??
+		parsed ??
 		(baseModelId ? contextWindowCache.get(baseModelId) : undefined) ??
 		contextWindowCache.get("default") ??
 		FALLBACK_CONTEXT_WINDOW
@@ -235,15 +250,16 @@ function toMetadata(
 ): CursorModelMetadata {
 	const thinkingLevelMap = getThinkingLevelMap(item);
 	const fastValue = getParamValue(defaultParams, "fast")?.toLowerCase();
+	const catalogDefaultContext = getParamValue(getDefaultParams(item), "context");
 	return {
 		piModelId,
 		baseModelId: item.id,
 		selectionModelId,
 		displayName: item.displayName || item.id,
 		defaultParams: cloneParams(defaultParams),
-		catalogDefaultContext: getParamValue(getDefaultParams(item), "context"),
+		catalogDefaultContext,
 		...(context ? { context } : {}),
-		contextWindow: getContextWindow(contextWindowCache, contextWindowKeys, context, item.id),
+		contextWindow: getContextWindow(contextWindowCache, contextWindowKeys, context, item.id, catalogDefaultContext),
 		supportsFast: getParameter(item, "fast") !== undefined,
 		defaultFast: fastValue === "true",
 		...(fastOverride !== undefined ? { fastOverride } : {}),
@@ -298,6 +314,12 @@ function registerModelItems(items: ModelListItem[], metadataMap = metadataByPiMo
 
 export function getCursorModelMetadata(modelId: string): CursorModelMetadata | undefined {
 	return metadataByPiModelId.get(modelId);
+}
+
+export function recordsCheckpointContextWindow(modelId: string): boolean {
+	const metadata = getCursorModelMetadata(modelId);
+	if (!metadata) return true;
+	return !omitsExplicitCatalogContext(metadata.baseModelId, metadata.context, metadata.catalogDefaultContext);
 }
 
 /** Plain snapshot so another extension copy can install the serving catalog's capabilities. */
@@ -381,10 +403,9 @@ export function buildCursorModelSelection(
 		setParam(params, "fast", resolvedFast === true ? "true" : "false");
 	}
 
-	// Grok 4.7 rejects its explicit catalog-default context. Keep the selected
-	// variant's metadata intact and leave effort, fast and other contexts explicit.
-	if (metadata.baseModelId === "grok-4.7" && metadata.catalogDefaultContext !== undefined &&
-		getParamValue(params, "context") === metadata.catalogDefaultContext) {
+	// Grok 4.7 rejects its explicit catalog-default context. Omit that param
+	// on the wire. The checkpoint from that request is not this variant's window.
+	if (omitsExplicitCatalogContext(metadata.baseModelId, getParamValue(params, "context"), metadata.catalogDefaultContext)) {
 		deleteParam(params, "context");
 	}
 
