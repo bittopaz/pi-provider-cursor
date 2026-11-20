@@ -1,11 +1,6 @@
 #!/usr/bin/env node
 /**
  * Purpose: Build generated dist output for GitHub/source installs even when Pi invokes npm install --omit=dev.
- * Responsibilities: Detect missing source-build dependencies via the local node_modules tree, install dev
- * dependencies with lifecycle scripts disabled, run the canonical build, then prune the dev tree so installs
- * keep a runtime-only footprint.
- * Scope: Package install lifecycle only; runtime behavior remains owned by scripts/build.mjs.
- * Usage: package.json prepare script.
  */
 
 import { execFile as execFileCallback } from "node:child_process";
@@ -22,10 +17,8 @@ const execFile = promisify(execFileCallback);
 const REQUIRED_SOURCE_BUILD_MODULES = [
 	"typescript",
 	"@types/node",
-	"typebox",
 	"@earendil-works/pi-ai",
 	"@earendil-works/pi-coding-agent",
-	"@earendil-works/pi-tui",
 ];
 
 function hasBuildDependencies() {
@@ -54,8 +47,6 @@ async function runBuild() {
 		cwd: process.cwd(),
 		maxBuffer: 20 * 1024 * 1024,
 	});
-	// Keep successful-build cleanup warnings visible during installs.
-	// reportError forwards failed-build output, including paths to retained previous builds.
 	if (stdout) process.stdout.write(stdout);
 	if (stderr) process.stderr.write(stderr);
 }
@@ -87,13 +78,11 @@ async function main() {
 	try {
 		await runBuild();
 	} catch (buildError) {
-		// Report the build first; cleanup can warn afterward but never mask it.
 		reportError(buildError);
 		await pruneQuietly();
 		process.exitCode = 1;
 		return;
 	}
-	// A prune failure after a successful build still fails the install.
 	await pruneDevDependencies();
 }
 

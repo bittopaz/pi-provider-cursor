@@ -4,10 +4,7 @@
 
 ## Unreleased
 
-- Drop the per-skill `<location>` line and its file-read fallback sentence from Pi's Cursor skill catalog while `cursor_activate_skill` can load the file itself. The catalog is then read only through that tool, which resolves `SKILL.md` from the skill name. A 99-skill catalog drops from 42,248 to 29,518 characters. The fallback keys off whether the activation tool is actually active, not the bridge environment flag: a run with no active pi tools leaves the tool inactive and starts no bridge endpoint, so those runs keep the absolute paths.
-- Add `completeCursorSideRequest` so an active session can ask Cursor a tool-free side question without a second Pi session.
-- Default local `fast` to off when no explicit preference exists. The builtin fallback is `false`, so a catalog `fast=true` default no longer enables billable fast variants on its own. On the local runtime, `/cursor-fast`, `--cursor-fast`, a `:fast` model alias, or `fastDefaults` still opt in, and the footer reports the resolved value truthfully. Summary/compaction turns and subagent entries with no explicit `fast` also send `false`; an explicit preference or entry `fast` still applies. Cloud parent turns send `fast=false` unless the selected model identity is `:fast`, while an explicit subagent entry `fast` still opts that child in; the cloud footer no longer shows a fast segment.
-- Omit the Cursor status line for a plain local agent session. The footer now shows only Cursor-only state Pi cannot show natively: `fast:on`, `plan`, `http1`, `mode invalid`, `cursor:cloud`, and `cursor:invalid`. `fast:off` and `fast:n/a` no longer appear, and `PI_CURSOR_FOOTER=0` still hides all Cursor status.
+- Reduce the provider to a local Cursor model call. `@cursor/sdk` is 1.4.1. Each turn sends the Pi transcript to a new agent created with `tools: []`, an empty in-memory workspace, and a temporary agent store that is deleted when the turn ends. Thinking text is not sent again. Models are listed with reasoning off. Cloud agents, the Pi tool bridge, tool replay, usage commands, session resume, and the generated model catalog are removed. A failed `Cursor.models.list` leaves the single model `grok-4.6`.
 
 ## 0.5.42 - 2026-11-17
 
