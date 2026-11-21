@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { normalizeCursorApiKey, resolveCursorApiKey } from "../src/cursor-api-key.js";
 
 describe("normalizeCursorApiKey", () => {
@@ -18,15 +18,14 @@ describe("normalizeCursorApiKey", () => {
 });
 
 describe("resolveCursorApiKey", () => {
-	const previous = process.env.CURSOR_API_KEY;
-
-	afterEach(() => {
-		if (previous === undefined) delete process.env.CURSOR_API_KEY;
-		else process.env.CURSOR_API_KEY = previous;
-	});
-
 	it("uses the env key when the argument is a placeholder", () => {
+		const previous = process.env.CURSOR_API_KEY;
 		process.env.CURSOR_API_KEY = "env-key";
-		expect(resolveCursorApiKey("pi-provider-cursor-cursor-api-key-placeholder")).toBe("env-key");
+		try {
+			expect(resolveCursorApiKey("pi-provider-cursor-cursor-api-key-placeholder")).toBe("env-key");
+		} finally {
+			if (previous === undefined) delete process.env.CURSOR_API_KEY;
+			else process.env.CURSOR_API_KEY = previous;
+		}
 	});
 });
