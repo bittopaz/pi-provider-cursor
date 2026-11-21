@@ -4,8 +4,10 @@
 
 ## Unreleased
 
+- Forward every active Pi tool to Cursor as `local.customTools`, extension tools such as `agent` included. The previous allowlist of `read`, `bash`, `powershell`, `edit`, `write`, `grep`, `find`, `ls`, `codemode`, and `tool_search` is gone. With no active tools, `tools` stays `[]`.
+
 - Publish the Cursor context windows and image input that `pi --list-models` prints. `grok-4.7` is 500000 tokens and sends the catalog `context` value `500k`. `deepseek-v41-flash-1017` is 1048576. `glm-5p3` and `glm-5p3-flash` are 1000000. `grok-4.5` and `grok-4.6` are 256000. `composer-2.5`, `default`, `glm-5.2`, `kimi-k2.7-code`, and `kimi-k3` are 200000. Output stays 16384. Image parts are sent on the SDK message.
-- Keep one local Cursor agent for the Pi session. The first send is the transcript. Later sends are the new user text. When Pi has `read`, `bash`, `powershell`, `edit`, `write`, `grep`, `find`, `ls`, `codemode`, or `tool_search` active, that send passes them as `local.customTools` and Pi runs the call. Cursor `file_path` is renamed to `path` before validation. A replay says the tool already ran, with no `[tool name]` line. Escape rejects the parked call and cancels the run. Context size is the last model call, not the whole agent bill. A catalog reasoning or effort parameter accepts a Pi thinking level. A fresh session reuses the last successful model list for the same API key. A failed `Cursor.models.list` leaves the single model `grok-4.6`. The agent store is deleted on shutdown, abort, or a failed run.
+- Keep one local Cursor agent for the Pi session. The first send is the transcript. Later sends are the new user text. When Pi has active tools, that send passes them as `local.customTools` and Pi runs the call. Cursor `file_path` is renamed to `path` before validation. A replay says the tool already ran, with no `[tool name]` line. Escape rejects the parked call and cancels the run. Context size is the last model call, not the whole agent bill. A catalog reasoning or effort parameter accepts a Pi thinking level. A fresh session reuses the last successful model list for the same API key. A failed `Cursor.models.list` leaves the single model `grok-4.6`. The agent store is deleted on shutdown, abort, or a failed run.
 
 ## 0.5.42 - 2026-11-17
 

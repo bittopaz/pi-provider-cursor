@@ -1,21 +1,9 @@
 import type { SDKJsonValue } from "@cursor/sdk";
-import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, type ExtensionAPI, type ToolInfo } from "@earendil-works/pi-coding-agent";
 import { normalizeCursorApiKey } from "./cursor-api-key.js";
 import { fallbackCursorModel, loadCursorModels, rememberedCursorModels } from "./cursor-models.js";
 import { resetCursorSession, setCursorToolSource, streamCursor } from "./cursor-provider.js";
-
-const PI_TOOLS = new Set([
-	"read",
-	"bash",
-	"powershell",
-	"edit",
-	"write",
-	"grep",
-	"find",
-	"ls",
-	"codemode",
-	"tool_search",
-]);
+import type { CursorToolSpec } from "./cursor-session.js";
 
 function plainSchema(parameters: unknown): Record<string, SDKJsonValue> | undefined {
 	try {
@@ -27,15 +15,19 @@ function plainSchema(parameters: unknown): Record<string, SDKJsonValue> | undefi
 	return undefined;
 }
 
-export default function (pi: ExtensionAPI) {
-	setCursorToolSource(() => {
-		const active = new Set(pi.getActiveTools().filter((name) => PI_TOOLS.has(name)));
-		return pi.getAllTools().flatMap((tool) => {
-			if (!active.has(tool.name)) return [];
-			const inputSchema = plainSchema(tool.parameters);
-			return [{ name: tool.name, description: tool.description, ...(inputSchema ? { inputSchema } : {}) }];
-		});
+type ToolSpecInput = Pick<ToolInfo, "name" | "description"> & { parameters: unknown };
+
+export function cursorToolSpecs(tools: readonly ToolSpecInput[], activeNames: readonly string[]): CursorToolSpec[] {
+	const active = new Set(activeNames);
+	return tools.flatMap((tool) => {
+		if (!active.has(tool.name)) return [];
+		const inputSchema = plainSchema(tool.parameters);
+		return [{ name: tool.name, description: tool.description, ...(inputSchema ? { inputSchema } : {}) }];
 	});
+}
+
+export default function (pi: ExtensionAPI) {
+	setCursorToolSource(() => cursorToolSpecs(pi.getAllTools(), pi.getActiveTools()));
 	pi.on("session_shutdown", () => {
 		void resetCursorSession();
 	});
