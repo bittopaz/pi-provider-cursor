@@ -32,7 +32,7 @@ PI_COMMON=(
 )
 
 usage() {
-  echo "Usage: VERIFY_RUN_ID=<id> $0 <prepare|doctor|models|reply|thinking|fast|tool|continue|cleanup>" >&2
+  echo "Usage: VERIFY_RUN_ID=<id> $0 <prepare|doctor|models|reply|thinking|fast|tool|toolext|continue|cleanup>" >&2
   exit 2
 }
 
@@ -483,6 +483,45 @@ print("tool=read isError=false text-has=verify-marker")
 PY
 }
 
+toolext() {
+  load_env
+  doctor >/dev/null
+  local out="$EVIDENCE_DIR/toolext/events.jsonl"
+  local err="$EVIDENCE_DIR/toolext/stderr.txt"
+  local status=0
+  run_pi "$out" "$err" \
+    pi "${PI_COMMON[@]}" -e "$ROOT/.agents/skills/verify/fixture-tool.ts" \
+    --tools fixture_marker --model cursor/grok-4.6 --thinking off -p -- \
+    "Call the fixture_marker tool, then reply with exactly what it returned." || status=$?
+  echo "exit=$status" | tee "$EVIDENCE_DIR/toolext/meta.txt"
+  if [[ "$status" -ne 0 ]]; then
+    cat "$err" >&2
+    exit "$status"
+  fi
+  python3 - "$out" "$SCRATCH_DIR" <<'PY'
+import json, os, sys
+events, scratch = sys.argv[1:]
+rows = [json.loads(line) for line in open(events) if line.strip()]
+session_cwd = next((row.get("cwd") for row in rows if row.get("type") == "session"), "")
+if os.path.realpath(session_cwd or "") != os.path.realpath(scratch):
+    raise SystemExit("toolext run cwd is not the scratch dir")
+ends = [row for row in rows if row.get("type") == "tool_execution_end" and row.get("toolName") == "fixture_marker"]
+if not ends or ends[-1].get("isError") is not False:
+    raise SystemExit("fixture_marker tool did not finish successfully")
+assistants = [
+    row["message"] for row in rows
+    if row.get("type") == "message_end" and row.get("message", {}).get("role") == "assistant"
+]
+text = ""
+for block in assistants[-1].get("content") or []:
+    if isinstance(block, dict) and block.get("type") == "text":
+        text += block.get("text", "")
+if "fixture-marker" not in text:
+    raise SystemExit(f"reply missing fixture marker: {text!r}")
+print("tool=fixture_marker isError=false text-has=fixture-marker")
+PY
+}
+
 continue_run() {
   load_env
   doctor >/dev/null
@@ -530,8 +569,19 @@ for block in assistants[-1].get("content") or []:
         text += block.get("text", "")
 if "amber" not in text.lower():
     raise SystemExit(f"second reply missing amber: {text!r}")
-print("users=2 second-text-has=amber")
+usage = [m.get("usage") or {} for m in assistants]
+first_in = usage[0].get("input") or 0
+second = usage[-1]
+second_in = second.get("input") or 0
+second_cache = second.get("cacheRead") or 0
+if not (second_in < first_in and second_cache > 0):
+    raise SystemExit(
+        f"second turn usage does not show agent reuse: "
+        f"first input={first_in}, second input={second_in}, cacheRead={second_cache}"
+    )
+print(f"users=2 second-text-has=amber reuse=input:{second_in}<{first_in} cacheRead={second_cache}")
 PY
+  assert_reply "$out" "grok-4.6" "amber" | tee -a "$EVIDENCE_DIR/continue/meta.txt"
 }
 
 cleanup() {
@@ -557,6 +607,7 @@ case "$cmd" in
   thinking) thinking ;;
   fast) fast ;;
   tool) tool ;;
+  toolext) toolext ;;
   continue) continue_run ;;
   cleanup) cleanup ;;
   *) usage ;;

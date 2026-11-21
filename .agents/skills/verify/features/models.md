@@ -27,6 +27,6 @@ Preconditions:
 ## Gotchas
 
 - `--list-models` reads the saved catalog. It does not refresh from Cursor. A stale or missing `cursor-sdk-model-list.json` cannot be repaired by listing again.
-- A saved list copied without the matching API key publishes the fallback row. Doctor treats that as a failure when prepare selected `catalog=remembered`.
+- A saved list copied without the matching API key publishes the fallback row. Doctor treats that as a failure when prepare selected `catalog=remembered`. The fallback row also appears when the saved list is missing, fails its version or key-fingerprint check, is not a valid model list, or when a live refresh returns no models.
 - Extra model ids are allowed. A known id with a different context value is a failure.
 - Thinking `yes` or `no` follows the saved catalog, except the fallback row, which is thinking `no`.

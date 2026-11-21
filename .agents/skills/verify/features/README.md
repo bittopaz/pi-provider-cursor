@@ -22,7 +22,7 @@ This directory is the maintained source for verifying the user-facing behavior o
 
 - Capture the JSONL stream, stderr, and `meta.txt`. The stream contains the user message and the assistant result.
 - Completion proof includes `provider=cursor`, the requested model, `stopReason=stop`, `agent_settled` with `aborted=false`, and the marker in the assistant text.
-- Tool proof includes a successful `read` tool event and the same text in the assistant reply.
+- Tool proof includes a successful tool event for the feature's tool (`read` or `fixture_marker`) and the same text in the assistant reply.
 - Record the feature name and the `events.jsonl` path with the result.
 - Report an unmet precondition with the command that exited 2. Do not report a skipped entry point as verified through a different command.
 
@@ -36,5 +36,5 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 - [List Cursor models](./models.md) covers the saved catalog and the single-model fallback.
 - [Set a thinking level](./thinking.md) covers `--thinking low` on `cursor/grok-4.6` when the saved catalog publishes thinking.
 - [Keep fast off](./fast.md) covers `fast=false` on `cursor/grok-4.6` when the saved catalog lists that value.
-- [Read a file with a tool](./tool.md) covers a `read` tool call against a scratch file and the following reply.
+- [Call a Pi tool through Cursor](./tool.md) covers a `read` tool call against a scratch file and a `fixture_marker` call registered by a second extension, proving every active Pi tool reaches Cursor.
 - [Send a second message](./continue.md) covers two prompts in one Pi process.

@@ -9,7 +9,7 @@ Set a thinking level chooses `low` for `cursor/grok-4.6` and still returns an as
 ## How to get to it (user POV)
 
 - Run `pi -e <repo> --model cursor/grok-4.6 --thinking low`.
-- Run `pi -e <repo> --model cursor/grok-4.6:low`.
+- Run `pi -e <repo> --model cursor/grok-4.6:low`. Pi parses the suffix form, but this harness exercises only `--thinking low`.
 - In the interactive session, set the thinking level to `low` before sending a prompt.
 
 ## Driving it with verify.sh
@@ -26,5 +26,6 @@ Preconditions:
 ## Gotchas
 
 - `grok-4.6` in the saved catalog accepts `low`, `medium`, `high`, and `xhigh`. It has no `off` value, so a request for `off` is clamped to `low`.
+- A thinking request on `grok-4.6` also sends `fast=false` when the saved catalog lists that value. [Keep fast off](./fast.md) proves that parameter on the SDK run record. This drive proves the reply at `low`; it does not assert the `effort=low` parameter itself.
 - Thinking text may be absent at `low`. Empty thinking text is not a failure. An error stop reason is.
 - This drive is a second billed completion. Do not run it after a drive whose reported cost already exceeded $5.

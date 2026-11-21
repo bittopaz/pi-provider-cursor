@@ -49,7 +49,7 @@ Exit 0 means the instance is worth a drive. Exit 1 means it is not: missing cred
 
 Common flags, as executed by `verify.sh`: working directory is `run/scratch`; `PI_CODING_AGENT_DIR` is `run/agent`; `PI_SKIP_VERSION_CHECK=1`; `CURSOR_API_KEY` is unset in the child; `--no-extensions --no-skills --no-context-files --no-mcp --no-themes --no-prompt-templates --no-approve --no-session --mode json -e <repo>`; system prompt is `You are a concise assistant. Follow the user request exactly.`
 
-The short system prompt, disabled tools (unless the feature turns `read` on), and skipped skills and context files are part of the harness. They keep one drive cheap and off the repo. They do not exercise the default coding-assistant prompt.
+The short system prompt, disabled tools (unless the feature enables one), and skipped skills and context files are part of the harness. They keep one drive cheap and off the repo. They do not exercise the default coding-assistant prompt.
 
 | Feature | Command |
 |---|---|
@@ -58,6 +58,7 @@ The short system prompt, disabled tools (unless the feature turns `read` on), an
 | Thinking level | `verify.sh thinking` |
 | Fast off | `verify.sh fast` |
 | Read a file | `verify.sh tool` |
+| Extension tool | `verify.sh toolext` |
 | Second turn | `verify.sh continue` |
 
 Recipes and pass conditions are in [features/](features/README.md). Drive one feature per invocation. A feature whose precondition is unmet exits 2 and names the gap; do not count another feature as a substitute.
@@ -78,9 +79,9 @@ Pass for a completion feature requires all of:
 
 - The session header `cwd` is `run/scratch` after resolving symlinks, not the repo and not `~/.pi/agent`. On macOS, `/tmp` and `/private/tmp` are that same directory.
 - The last assistant `message_end` has `provider` `cursor`, the requested model id, and `stopReason` `stop`.
-- The assistant text contains the requested marker (`pong`, `verify-marker`, or `amber`) and is at most 200 characters.
+- The assistant text contains the requested marker (`pong`, `verify-marker`, `fixture-marker`, or `amber`) and is at most 200 characters.
 - The last `agent_settled` event has `aborted` `false`.
-- For the tool feature, a `tool_execution_end` event for `read` has `isError` `false`, and the assistant text contains the file contents. The tool event is required even if the final text looks right.
+- For the tool features, a `tool_execution_end` event for the feature's tool (`read` or `fixture_marker`) has `isError` `false`, and the assistant text contains the tool's output. The tool event is required even if the final text looks right.
 - Stdout and stderr in the evidence directory do not contain the API key. The harness rewrites a leaked key to `[redacted]` and records that line on stdout.
 
 Mocks are not used. Cursor's model list and completion APIs are the real ones. `PI_OFFLINE=1` on the model-list command only skips Pi's startup network; the completion drives do not set it.
@@ -108,4 +109,4 @@ export VERIFY_RUN_ID="verify-$(date +%Y%m%dT%H%M%S)"
 test -s "/tmp/pi-cursor-verify/${VERIFY_RUN_ID}/evidence/reply/events.jsonl"
 ```
 
-Subcommands: `prepare`, `doctor`, `models`, `reply`, `thinking`, `fast`, `tool`, `continue`, `cleanup`.
+Subcommands: `prepare`, `doctor`, `models`, `reply`, `thinking`, `fast`, `tool`, `toolext`, `continue`, `cleanup`.
