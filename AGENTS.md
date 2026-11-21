@@ -10,13 +10,17 @@ This package is a Pi extension. It registers the `cursor` provider, lists models
 - One agent stays for the session. The first send is the transcript. Later sends are the new user text. A replay writes each past tool call as "The <name> tool already ran with <arguments>." Do not write `[tool name]` lines. Dispose the agent on shutdown, abort, or a failed run.
 - When Pi refreshes models without network, publish the last successful `Cursor.models.list` for the same API key. A failed model list, including a missing API key, publishes `grok-4.6` only.
 - Scrub the API key out of errors. Mute stderr, console, and plain stdout while the SDK call runs. Terminal redraws, which contain an escape character, pass through.
-- When a catalog model has a `reasoning`, `reasoning_effort`, `effort`, or `thinking` parameter, publish `reasoning: true` and map Pi thinking levels onto the values that parameter lists. `off` uses `none`, `off`, or `false` when that value exists. Send the selected level as that parameter on `Agent.create` and `agent.send`. Models without that parameter stay `reasoning: false`. When the catalog lists a `fast` value of `false`, every request sends that value, at every thinking level. When the catalog lists a `context` value equal to the published window, send that value too.
-- Publish these context windows: `composer-2.5`, `default`, `glm-5.2`, `kimi-k2.7-code`, and `kimi-k3` at 200000, `grok-4.5` and `grok-4.6` at 256000, `grok-4.7` at 500000, `glm-5p3` and `glm-5p3-flash` at 1000000, and `deepseek-v41-flash-1017` at 1048576. An unknown id stays at 128000. Output stays 16384. Every model accepts images. Image parts go on the SDK message and stay out of the transcript text.
+- When a catalog model has a `reasoning`, `reasoning_effort`, `effort`, or `thinking` parameter, publish `reasoning: true` and map Pi thinking levels onto the values that parameter lists. `off` uses `none`, `off`, or `false` when that value exists. Send the selected level as that parameter on `Agent.create` and `agent.send`. Models without that parameter stay `reasoning: false`.
+- When the catalog lists a `fast` value of `false`, every request sends that value, at every thinking level.
+- When the catalog lists a `context` value equal to the published window, send that value on `Agent.create` and `agent.send`.
+- Publish the context windows that `CONTEXT_WINDOWS` in `src/cursor-models.ts` lists. An unknown id stays at 128000. Output stays 16384. Every model accepts images. Image parts go on the SDK message and stay out of the transcript text.
 - Omit thinking text when the transcript is sent again.
 - Keep the session's `JsonlLocalAgentStore` in a temporary directory and delete that directory after the agent is disposed.
 
 ## Checks
 
 `npm test`, `npm run typecheck`, and `npm run build`. The GitHub workflows run those commands.
+
+The verify skill in `.agents/skills/verify/` drives this contract against real Cursor calls: tool forwarding, the model table, thinking, fast, and agent reuse. Run `verify.sh prepare` and `verify.sh doctor`, then the drive for the behavior you changed.
 
 A behavior change that the types do not settle needs one real Cursor call. Keep that call under $5. Use a short prompt, read `usage.cost.total` when the SDK reports it, and do not send a second prompt if the first call already reached the cap.
