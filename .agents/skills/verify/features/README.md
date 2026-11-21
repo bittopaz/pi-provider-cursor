@@ -1,4 +1,4 @@
-# pi-cursor-sdk verification map
+# pi-provider-cursor verification map
 
 This directory is the maintained source for verifying the user-facing behavior of the Cursor provider in Pi. Read the index before driving, then use the matching feature file as the recipe.
 

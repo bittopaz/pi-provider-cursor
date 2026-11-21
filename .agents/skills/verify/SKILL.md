@@ -1,9 +1,9 @@
 ---
 name: verify
-description: Drive pi-cursor-sdk through an isolated Pi print session and prove Cursor model listing, replies, thinking, fast off, tool use, and a second turn. Use when verifying this extension's user-facing provider behavior.
+description: Drive pi-provider-cursor through an isolated Pi print session and prove Cursor model listing, replies, thinking, fast off, tool use, and a second turn. Use when verifying this extension's user-facing provider behavior.
 ---
 
-# Verify pi-cursor-sdk
+# Verify pi-provider-cursor
 
 The user-facing surface is the Pi CLI with this package loaded (`pi -e <repo> --model cursor/<id>`). Print JSON mode is the harness. There is no server and no port. Interactive TUI rendering is outside this harness; model resolution and the reply stream are the same extension path.
 

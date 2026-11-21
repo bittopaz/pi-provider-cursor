@@ -1,4 +1,6 @@
-# pi-cursor-sdk
+# pi-provider-cursor
+
+This project is a fork of [pi-cursor-sdk](https://github.com/fitchmultz/pi-cursor-sdk), renamed to pi-provider-cursor.
 
 Pi provider that calls a Cursor model and returns the text.
 

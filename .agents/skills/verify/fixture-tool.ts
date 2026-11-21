@@ -9,7 +9,7 @@ export default function (pi) {
 	pi.registerTool({
 		name: "fixture_marker",
 		label: "Fixture Marker",
-		description: "Return a fixed marker string. Used by the pi-cursor-sdk verify harness.",
+		description: "Return a fixed marker string. Used by the pi-provider-cursor verify harness.",
 		parameters: Type.Object({}),
 		async execute() {
 			return { content: [{ type: "text", text: "fixture-marker" }] };

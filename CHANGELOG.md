@@ -14,27 +14,27 @@
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- Use String.prototype.toWellFormed in the display sanitizer (#518) ([2dd371a](https://github.com/fitchmultz/pi-cursor-sdk/commit/2dd371a60f76af068f11af972106f1329776dba7))
+- Use String.prototype.toWellFormed in the display sanitizer (#518) ([2dd371a](https://github.com/bittopaz/pi-provider-cursor/commit/2dd371a60f76af068f11af972106f1329776dba7))
 
 ### What's Changed
-* Use String.prototype.toWellFormed in the display sanitizer by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/518
+* Use String.prototype.toWellFormed in the display sanitizer by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/518
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.41...v0.5.42
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.41...v0.5.42
 
 ## 0.5.41 - 2026-11-14
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- Raise the Pi floor to 1.5.2 and use native crypto.hash (#515) ([da8829b](https://github.com/fitchmultz/pi-cursor-sdk/commit/da8829b8b9b7beb22605dad04a127e7fa131932a))
+- Raise the Pi floor to 1.5.2 and use native crypto.hash (#515) ([da8829b](https://github.com/bittopaz/pi-provider-cursor/commit/da8829b8b9b7beb22605dad04a127e7fa131932a))
 
 ### What's Changed
-* Raise the Pi floor to 1.5.2 and use native crypto.hash by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/515
-* chore: bump root dev typebox to 1.4.7 by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/516
+* Raise the Pi floor to 1.5.2 and use native crypto.hash by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/515
+* chore: bump root dev typebox to 1.4.7 by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/516
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.40...v0.5.41
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.40...v0.5.41
 
 ## 0.5.40 - 2026-11-14
 
@@ -42,41 +42,41 @@
 - Apply Pi's `shellPath` as Cursor's `SHELL` on macOS and Linux so Cursor selects its bash executor instead of the zsh one, which kills the process group when a background command leaves the pipes open. Windows is left unchanged. Cursor's Bash executor there resolves `bash.exe` through `PATH`, and Pi's unset `shellPath` is Git Bash under Program Files, so writing it throws "Can't find Bash" when that executable is not on PATH. The value is read on `session_start` rather than during extension load, and it resolves the way Pi's own setting does, including a leading `~`. `npm run smoke:shell-path` prints the `SHELL` a real `session_start` sees for an explicit bash `shellPath`, for an unset `shellPath`, and without the extension, each from an isolated Pi agent directory.
 <!-- npm-release:unreleased:end -->
 
-- fix(shell): apply Pi's shellPath as Cursor's SHELL (#509) ([e0db4a3](https://github.com/fitchmultz/pi-cursor-sdk/commit/e0db4a3480f83a6c7a0ad97f705e2d9f74c79b8c))
+- fix(shell): apply Pi's shellPath as Cursor's SHELL (#509) ([e0db4a3](https://github.com/bittopaz/pi-provider-cursor/commit/e0db4a3480f83a6c7a0ad97f705e2d9f74c79b8c))
 
 ### What's Changed
-* fix(shell): apply Pi's shellPath as Cursor's SHELL by @bittopaz in https://github.com/fitchmultz/pi-cursor-sdk/pull/509
+* fix(shell): apply Pi's shellPath as Cursor's SHELL by @bittopaz in https://github.com/bittopaz/pi-provider-cursor/pull/509
 
 ### New Contributors
-* @bittopaz made their first contribution in https://github.com/fitchmultz/pi-cursor-sdk/pull/509
+* @bittopaz made their first contribution in https://github.com/bittopaz/pi-provider-cursor/pull/509
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.39...v0.5.40
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.39...v0.5.40
 
 ## 0.5.39 - 2026-11-13
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- feat: hide duplicate Cursor SDK alias rows in picker by default (#506) ([b77afdc](https://github.com/fitchmultz/pi-cursor-sdk/commit/b77afdcdee692c9cd356cee7e705aed52ced0e7b))
+- feat: hide duplicate Cursor SDK alias rows in picker by default (#506) ([b77afdc](https://github.com/bittopaz/pi-provider-cursor/commit/b77afdcdee692c9cd356cee7e705aed52ced0e7b))
 
 ### What's Changed
-* feat: hide duplicate Cursor SDK alias rows in picker by default by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/506
+* feat: hide duplicate Cursor SDK alias rows in picker by default by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/506
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.38...v0.5.39
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.38...v0.5.39
 
 ## 0.5.38 - 2026-11-13
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- chore(deps): bump hono to 4.13.18 and @hono/node-server to 2.1.8 (#504) ([ea03b6e](https://github.com/fitchmultz/pi-cursor-sdk/commit/ea03b6e2f9adc32fe6c622235372ba40aab35779))
+- chore(deps): bump hono to 4.13.18 and @hono/node-server to 2.1.8 (#504) ([ea03b6e](https://github.com/bittopaz/pi-provider-cursor/commit/ea03b6e2f9adc32fe6c622235372ba40aab35779))
 
 ### What's Changed
-* chore(deps): bump hono to 4.13.18 and @hono/node-server to 2.1.8 by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/504
+* chore(deps): bump hono to 4.13.18 and @hono/node-server to 2.1.8 by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/504
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.37...v0.5.38
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.37...v0.5.38
 
 ## 0.5.37 - 2026-11-13
 
@@ -85,24 +85,24 @@
 
 - Supersedes unpublished 0.5.36 from aebaff2691b72e6e750eddf1f0459a5f3f406eea. Includes all changes since v0.5.34; the original release records remain unchanged.
 
-- fix: accept unfenced trailing JSON verdicts in release review (#501) ([6227c52](https://github.com/fitchmultz/pi-cursor-sdk/commit/6227c5214ca687fc01ee5e2afb28b5d17bb12af9))
+- fix: accept unfenced trailing JSON verdicts in release review (#501) ([6227c52](https://github.com/bittopaz/pi-provider-cursor/commit/6227c5214ca687fc01ee5e2afb28b5d17bb12af9))
 
 ### What's Changed
-* chore: remove unsupported platform qualification by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/488
-* chore: remove Windows-only smoke remnants by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/492
-* chore: remove Windows/PowerShell line from native smoke prompt by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/493
-* chore(release): 0.5.35 by @pi-durable[bot] in https://github.com/fitchmultz/pi-cursor-sdk/pull/491
-* chore: fix release-review leftovers from the platform removal by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/494
-* chore(release): 0.5.36 by @pi-durable[bot] in https://github.com/fitchmultz/pi-cursor-sdk/pull/495
-* chore: align smoke docs with platform removal (1/4) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/496
-* fix: gate release qualification on material findings (2/4) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/497
-* chore: unpublish maintainer smoke suite from npm (3/4) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/498
-* chore: remove remaining Windows branches from maintainer scripts (4/4) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/499
-* fix: accept unfenced trailing JSON verdicts in release review by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/501
-* chore: drop redundant self-reported file lists from release review by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/503
+* chore: remove unsupported platform qualification by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/488
+* chore: remove Windows-only smoke remnants by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/492
+* chore: remove Windows/PowerShell line from native smoke prompt by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/493
+* chore(release): 0.5.35 by @pi-durable[bot] in https://github.com/bittopaz/pi-provider-cursor/pull/491
+* chore: fix release-review leftovers from the platform removal by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/494
+* chore(release): 0.5.36 by @pi-durable[bot] in https://github.com/bittopaz/pi-provider-cursor/pull/495
+* chore: align smoke docs with platform removal (1/4) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/496
+* fix: gate release qualification on material findings (2/4) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/497
+* chore: unpublish maintainer smoke suite from npm (3/4) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/498
+* chore: remove remaining Windows branches from maintainer scripts (4/4) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/499
+* fix: accept unfenced trailing JSON verdicts in release review by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/501
+* chore: drop redundant self-reported file lists from release review by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/503
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.34...v0.5.37
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.34...v0.5.37
 
 ## 0.5.36 - 2026-11-13
 
@@ -111,32 +111,32 @@
 
 - Supersedes unpublished 0.5.35 from bf6104a74ddd963af12a42d2b3ed8c3b431a5ec3. Includes all changes since v0.5.34; the original release records remain unchanged.
 
-- chore: fix release-review leftovers from the platform removal (#494) ([5858b33](https://github.com/fitchmultz/pi-cursor-sdk/commit/5858b339a5a75d77bcf9e1d70887ce1cdb6e1d2c))
+- chore: fix release-review leftovers from the platform removal (#494) ([5858b33](https://github.com/bittopaz/pi-provider-cursor/commit/5858b339a5a75d77bcf9e1d70887ce1cdb6e1d2c))
 
 ### What's Changed
-* chore: remove unsupported platform qualification by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/488
-* chore: remove Windows-only smoke remnants by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/492
-* chore: remove Windows/PowerShell line from native smoke prompt by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/493
-* chore(release): 0.5.35 by @pi-durable[bot] in https://github.com/fitchmultz/pi-cursor-sdk/pull/491
-* chore: fix release-review leftovers from the platform removal by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/494
+* chore: remove unsupported platform qualification by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/488
+* chore: remove Windows-only smoke remnants by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/492
+* chore: remove Windows/PowerShell line from native smoke prompt by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/493
+* chore(release): 0.5.35 by @pi-durable[bot] in https://github.com/bittopaz/pi-provider-cursor/pull/491
+* chore: fix release-review leftovers from the platform removal by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/494
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.34...v0.5.36
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.34...v0.5.36
 
 ## 0.5.35 - 2026-11-12
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- chore: remove unsupported platform qualification (#488) ([4d39383](https://github.com/fitchmultz/pi-cursor-sdk/commit/4d39383b15bd377348c19d6510d7b095c424fe48))
+- chore: remove unsupported platform qualification (#488) ([4d39383](https://github.com/bittopaz/pi-provider-cursor/commit/4d39383b15bd377348c19d6510d7b095c424fe48))
 
 ### What's Changed
-* chore: remove unsupported platform qualification by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/488
-* chore: remove Windows-only smoke remnants by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/492
-* chore: remove Windows/PowerShell line from native smoke prompt by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/493
+* chore: remove unsupported platform qualification by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/488
+* chore: remove Windows-only smoke remnants by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/492
+* chore: remove Windows/PowerShell line from native smoke prompt by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/493
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.34...v0.5.35
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.34...v0.5.35
 
 ## 0.5.34 - 2026-11-12
 
@@ -145,29 +145,29 @@
 
 - Supersedes unpublished 0.5.33 from f15d296e1122ab3fdd51797eda1ff2820a5e79c1. Includes all changes since v0.5.32; the original release records remain unchanged.
 
-- docs: use consistent apostrophe in platform requirements (#485) ([6f05520](https://github.com/fitchmultz/pi-cursor-sdk/commit/6f0552078a6c3042e197d60cac257fb916f25fe7))
+- docs: use consistent apostrophe in platform requirements (#485) ([6f05520](https://github.com/bittopaz/pi-provider-cursor/commit/6f0552078a6c3042e197d60cac257fb916f25fe7))
 
 ### What's Changed
-* fix: require patched Node security releases by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/483
-* chore(release): 0.5.33 by @pi-durable[bot] in https://github.com/fitchmultz/pi-cursor-sdk/pull/484
-* docs: use consistent apostrophe in platform requirements by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/485
-* fix: refresh bundled Cursor catalog for release qualification by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/487
+* fix: require patched Node security releases by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/483
+* chore(release): 0.5.33 by @pi-durable[bot] in https://github.com/bittopaz/pi-provider-cursor/pull/484
+* docs: use consistent apostrophe in platform requirements by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/485
+* fix: refresh bundled Cursor catalog for release qualification by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/487
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.32...v0.5.34
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.32...v0.5.34
 
 ## 0.5.33 - 2026-11-12
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- fix: require patched Node security releases (#483) ([3c8b6e2](https://github.com/fitchmultz/pi-cursor-sdk/commit/3c8b6e2c5a680c60be5f1f5af14c15cb902b510b))
+- fix: require patched Node security releases (#483) ([3c8b6e2](https://github.com/bittopaz/pi-provider-cursor/commit/3c8b6e2c5a680c60be5f1f5af14c15cb902b510b))
 
 ### What's Changed
-* fix: require patched Node security releases by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/483
+* fix: require patched Node security releases by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/483
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.32...v0.5.33
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.32...v0.5.33
 
 ## 0.5.32 - 2026-11-12
 
@@ -180,7 +180,7 @@
 
 - Ask Pi to abort a running bridged tool only once when the bridge stops it after a call deadline, Cursor cancellation, run release or shutdown. On Windows, the bash process-tree cleanup for that tool now also runs once instead of twice.
 - Keep a successful `/cursor-cloud archive` or `/cursor-cloud delete` final when the system clock moves backward during the request. Previously the agent stayed listed as "archive pending" or "delete pending" even though the success was recorded, which blocked further cleanup. Status now follows each operation's recorded intent and result instead of timestamps, including after reopening or forking the session, so deleted agents leave the list. A request with no recorded result still blocks retries until you check the Cursor Cloud dashboard.
-- `/cursor-refresh-models` reports a refreshed catalog only when a live Cursor response was published. Another refresh, such as a session start, login or provider registration, can supersede it and leave the matching cached catalog in place. The command previously reported that as refreshed; it now says it did not confirm a live catalog. When a host's older pi-cursor-sdk serves the session and cannot report catalog freshness, it asks to update and reload that host instead of retrying. Fallback and cached-catalog warnings are unchanged.
+- `/cursor-refresh-models` reports a refreshed catalog only when a live Cursor response was published. Another refresh, such as a session start, login or provider registration, can supersede it and leave the matching cached catalog in place. The command previously reported that as refreshed; it now says it did not confirm a live catalog. When a host's older pi-provider-cursor serves the session and cannot report catalog freshness, it asks to update and reload that host instead of retrying. Fallback and cached-catalog warnings are unchanged.
 - Keep a partly saved fast or HTTP/1.1 preference in the session that saved it. When `/cursor-fast` or `/cursor-http` wrote `~/.pi/agent/cursor-sdk.json` but Pi could not append the session entry, the global value became authoritative in every session of the process. Sibling sessions ignored their own branch preferences, and starting any other session sent the saving session back to its stale branch value. Now only the saving session prefers the new global value, including after tree navigation, until a later successful save or until that session starts again, including `/reload`. Sibling sessions keep their own preferences.
 - Settle pending RPC requests when the local resume smoke harness stops, exits, or fails, and reject later sends without writing. Stopping previously cleared request timers without settling their promises. Repeated stops now await the same process-tree cleanup. Local and Cloud harnesses share JSONL request bookkeeping; Cloud shutdown policy is unchanged.
 - Make maintainer smoke child cleanup wait for stdout and stderr to close, not just for the process to exit. A descendant that inherits the output pipes can keep writing after the parent exits. Process-tree termination now fails verification while such an escaped descendant still holds the pipes. After a run settles, `npm run debug:provider-events` gives pi up to `PI_PROVIDER_EVENT_DEBUG_TIMEOUT_MS` (default 600000 ms) to exit, then terminates descendants still holding its output; it previously could wait for them indefinitely. It now rejects a non-finite `PI_PROVIDER_EVENT_DEBUG_TIMEOUT_MS` before starting pi. The steering smoke's post-settle timeout now says pi did not exit and close its output.
@@ -189,57 +189,57 @@
 - Make the smoke helpers report what actually happened to pi, keeping "evidence seen" apart from "pi exited". The platform live-suite runner previously passed `cursor-http1-live` when pi never exited after `/quit`, EOF, Ctrl+C and kill, and reported an early pi exit as a marker timeout after a 60-second wait. `live-status.json` now records what ended the wait (`observation`) separately from node-pty's exit (`ptyExit`: `exited` or `not-observed`). A missing exit fails the run and the new host `pi-exit` check. `smoke:steering` now fails at once when pi exits before a phase, instead of polling for 300 seconds. `smoke:visual` keeps an exited pi's pane, fails with pi's exit status, and records pi's pane state in the manifest. `smoke:live`'s TUI check now also requires the persisted assistant answer in the session JSONL, and fails at once with pi's status when pi exits. The shared shell timeout now kills a command that ignores TERM after the kill grace, and its fallback no longer leaves the watcher's `sleep` running.
 <!-- npm-release:unreleased:end -->
 
-- refactor: centralize Cursor tool completion identities (#467) ([616f885](https://github.com/fitchmultz/pi-cursor-sdk/commit/616f8855638e1746436692dacaaf40577327a9a6))
+- refactor: centralize Cursor tool completion identities (#467) ([616f885](https://github.com/bittopaz/pi-provider-cursor/commit/616f8855638e1746436692dacaaf40577327a9a6))
 
 ### What's Changed
-* refactor: centralize Cursor tool completion identities (1/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/467
-* refactor: make deferred Cursor tool lifecycle state explicit (2/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/468
-* refactor: retain typed open Cursor content blocks (3/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/470
-* refactor: model bridge listener ownership explicitly (4/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/471
-* refactor: keep verified Cloud smoke cleanup evidence (5/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/472
-* refactor: make usage terminal attempts and billing folds explicit (6/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/473
-* refactor: own SDK usage observation in live-run accounting (7/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/474
-* fix: settle Cursor bridge requests before abort callbacks (8/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/475
-* fix: keep completed Cloud operations final across clock changes (9/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/476
-* fix: report served catalog provenance truthfully (10/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/477
-* fix: keep partial preference saves and CLI local-force state in their owning session (11/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/478
-* fix: settle smoke RPC requests on shutdown (12/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/479
-* refactor: model live-run drain continuation and branch disposition explicitly (13/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/480
-* fix: report artifact extraction and rollback outcomes (14/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/438
-* fix: stop owned smoke leases and separate smoke observations from pi exit (15/15) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/481
+* refactor: centralize Cursor tool completion identities (1/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/467
+* refactor: make deferred Cursor tool lifecycle state explicit (2/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/468
+* refactor: retain typed open Cursor content blocks (3/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/470
+* refactor: model bridge listener ownership explicitly (4/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/471
+* refactor: keep verified Cloud smoke cleanup evidence (5/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/472
+* refactor: make usage terminal attempts and billing folds explicit (6/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/473
+* refactor: own SDK usage observation in live-run accounting (7/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/474
+* fix: settle Cursor bridge requests before abort callbacks (8/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/475
+* fix: keep completed Cloud operations final across clock changes (9/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/476
+* fix: report served catalog provenance truthfully (10/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/477
+* fix: keep partial preference saves and CLI local-force state in their owning session (11/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/478
+* fix: settle smoke RPC requests on shutdown (12/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/479
+* refactor: model live-run drain continuation and branch disposition explicitly (13/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/480
+* fix: report artifact extraction and rollback outcomes (14/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/438
+* fix: stop owned smoke leases and separate smoke observations from pi exit (15/15) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/481
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.31...v0.5.32
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.31...v0.5.32
 
 ## 0.5.31 - 2026-11-11
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- refactor: keep replay results with their owners (#416) ([f0d5c8a](https://github.com/fitchmultz/pi-cursor-sdk/commit/f0d5c8a3961644d36ea1fade102392f244218a71))
+- refactor: keep replay results with their owners (#416) ([f0d5c8a](https://github.com/bittopaz/pi-provider-cursor/commit/f0d5c8a3961644d36ea1fade102392f244218a71))
 
 ### What's Changed
-* refactor: keep replay results with their owners by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/416
-* refactor: make SDK output frame ownership explicit by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/439
+* refactor: keep replay results with their owners by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/416
+* refactor: make SDK output frame ownership explicit by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/439
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.30...v0.5.31
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.30...v0.5.31
 
 ## 0.5.30 - 2026-11-11
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- ci: align shared automation pins (#461) ([d2da088](https://github.com/fitchmultz/pi-cursor-sdk/commit/d2da0883f75cf1a6deb0b3a0e1569798e920e578))
+- ci: align shared automation pins (#461) ([d2da088](https://github.com/bittopaz/pi-provider-cursor/commit/d2da0883f75cf1a6deb0b3a0e1569798e920e578))
 
 ### What's Changed
-* ci: align shared automation pins by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/461
-* test: mark intentional resume publication discards by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/462
-* ci: pin shared automation at 508d2e2 by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/463
-* refactor: make Cursor provider binding state explicit by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/464
+* ci: align shared automation pins by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/461
+* test: mark intentional resume publication discards by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/462
+* ci: pin shared automation at 508d2e2 by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/463
+* refactor: make Cursor provider binding state explicit by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/464
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.29...v0.5.30
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.29...v0.5.30
 
 ## 0.5.29 - 2026-11-11
 
@@ -249,13 +249,13 @@
 - A local run's resume handle is now recorded at the end of the Pi turn that delivers its result. That is the final answer, or the last replayed tool when the run has no final text. A run that finished while Pi was still replaying its native tools previously recorded the handle before its final answer. A restart then could not resume that agent and bootstrapped a new one from the transcript. A finished run whose result never reaches Pi, for example after an abort, records no handle. When new user input continues the agent, only the continuing send records one. Tree navigation, compaction and session replacement before delivery cancel the handle, so it cannot land on a branch selected afterwards. The entry format is unchanged.
 <!-- npm-release:unreleased:end -->
 
-- Fix durable resume publication at delivered turn boundaries (#459) ([c56a3f3](https://github.com/fitchmultz/pi-cursor-sdk/commit/c56a3f32a7ba9f75bafc99617ba0a80b6be80377))
+- Fix durable resume publication at delivered turn boundaries (#459) ([c56a3f3](https://github.com/bittopaz/pi-provider-cursor/commit/c56a3f32a7ba9f75bafc99617ba0a80b6be80377))
 
 ### What's Changed
-* fix: resume local agents after replayed tool runs by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/459
+* fix: resume local agents after replayed tool runs by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/459
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.28...v0.5.29
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.28...v0.5.29
 
 ## 0.5.28 - 2026-11-09
 
@@ -285,21 +285,21 @@
 
 - Supersedes unpublished 0.5.27 from d6f45b5ee72e9410a74f3252edbca4b70be8da53. Includes all changes since v0.5.26; the original release records remain unchanged.
 
-- ci: adopt unpublished release recovery (#450) ([4afa039](https://github.com/fitchmultz/pi-cursor-sdk/commit/4afa039e5c59a64b89ab320f25e0ad601b1561a3))
+- ci: adopt unpublished release recovery (#450) ([4afa039](https://github.com/bittopaz/pi-provider-cursor/commit/4afa039e5c59a64b89ab320f25e0ad601b1561a3))
 
 ### What's Changed
-* Refactor pooled agent and send-state ownership by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/446
-* chore(release): 0.5.27 by @pi-durable[bot] in https://github.com/fitchmultz/pi-cursor-sdk/pull/447
-* Inline pooled agent bridge callback binding by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/448
-* ci: adopt unpublished release recovery by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/450
-* fix: refresh Cursor fallback catalog by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/452
-* fix: refresh current Cursor fallback catalog by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/454
-* fix: adopt release reconciliation diagnostics by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/456
-* Wake the version workflow only for release events by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/457
-* fix: finish missing evidence reads in native reviews by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/458
+* Refactor pooled agent and send-state ownership by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/446
+* chore(release): 0.5.27 by @pi-durable[bot] in https://github.com/bittopaz/pi-provider-cursor/pull/447
+* Inline pooled agent bridge callback binding by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/448
+* ci: adopt unpublished release recovery by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/450
+* fix: refresh Cursor fallback catalog by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/452
+* fix: refresh current Cursor fallback catalog by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/454
+* fix: adopt release reconciliation diagnostics by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/456
+* Wake the version workflow only for release events by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/457
+* fix: finish missing evidence reads in native reviews by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/458
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.26...v0.5.28
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.26...v0.5.28
 
 ## 0.5.27 - 2026-11-09
 
@@ -309,39 +309,39 @@
 - Event-debug `metadata.json` represents a pooled agent that has not bootstrapped as `providerMeta.sendState: { "bootstrapped": false }`. Fingerprint and incremental-send count fields appear only after a successful bootstrap. Persisted resume entries keep their existing format.
 <!-- npm-release:unreleased:end -->
 
-- Refactor pooled agent and send-state ownership (#446) ([9959087](https://github.com/fitchmultz/pi-cursor-sdk/commit/99590875cf3a52aea96633720550c95cced3e22b))
+- Refactor pooled agent and send-state ownership (#446) ([9959087](https://github.com/bittopaz/pi-provider-cursor/commit/99590875cf3a52aea96633720550c95cced3e22b))
 
 ### What's Changed
-* Refactor pooled agent and send-state ownership by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/446
+* Refactor pooled agent and send-state ownership by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/446
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.26...v0.5.27
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.26...v0.5.27
 
 ## 0.5.26 - 2026-11-09
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- refactor: make Cursor turn cleanup ownership explicit (#444) ([ae27d81](https://github.com/fitchmultz/pi-cursor-sdk/commit/ae27d81186733974b5e326486bdc28cb17ed6b8f))
+- refactor: make Cursor turn cleanup ownership explicit (#444) ([ae27d81](https://github.com/bittopaz/pi-provider-cursor/commit/ae27d81186733974b5e326486bdc28cb17ed6b8f))
 
 ### What's Changed
-* refactor: make Cursor turn cleanup ownership explicit by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/444
+* refactor: make Cursor turn cleanup ownership explicit by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/444
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.25...v0.5.26
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.25...v0.5.26
 
 ## 0.5.25 - 2026-11-09
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- test: pin the Cursor turn queue cancellation contract (#442) ([a605799](https://github.com/fitchmultz/pi-cursor-sdk/commit/a605799cdd767e0a38a7541bae17ed714c105c0b))
+- test: pin the Cursor turn queue cancellation contract (#442) ([a605799](https://github.com/bittopaz/pi-provider-cursor/commit/a605799cdd767e0a38a7541bae17ed714c105c0b))
 
 ### What's Changed
-* test: pin Cursor turn queue cancellation ownership by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/442
+* test: pin Cursor turn queue cancellation ownership by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/442
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.24...v0.5.25
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.24...v0.5.25
 
 ## 0.5.24 - 2026-11-09
 
@@ -351,68 +351,68 @@
 - Debug capture: `drain-events.jsonl` `turn_start` and `turn_end` records now report the live run's SDK result as `sdkOutcome` (`running`, `finished`, `cancelled` or `error`) instead of `done`. `done: true` used to mean finished, cancelled or failed.
 <!-- npm-release:unreleased:end -->
 
-- refactor: separate live run outcomes from resource release (#419) ([0d95be9](https://github.com/fitchmultz/pi-cursor-sdk/commit/0d95be9b5d4c68f18bb2ef90a975b4a06e74d3cf))
+- refactor: separate live run outcomes from resource release (#419) ([0d95be9](https://github.com/bittopaz/pi-provider-cursor/commit/0d95be9b5d4c68f18bb2ef90a975b4a06e74d3cf))
 
 ### What's Changed
-* refactor: separate live run outcomes from resource release by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/419
+* refactor: separate live run outcomes from resource release by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/419
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.23...v0.5.24
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.23...v0.5.24
 
 ## 0.5.23 - 2026-11-09
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- refactor: fold local cleanup outcomes per agent (#418) ([c4a873e](https://github.com/fitchmultz/pi-cursor-sdk/commit/c4a873e0f47c754e07fcc30b86b13cb3d9c758ca))
+- refactor: fold local cleanup outcomes per agent (#418) ([c4a873e](https://github.com/bittopaz/pi-provider-cursor/commit/c4a873e0f47c754e07fcc30b86b13cb3d9c758ca))
 
 ### What's Changed
-* refactor: fold local cleanup outcomes per agent by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/418
+* refactor: fold local cleanup outcomes per agent by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/418
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.22...v0.5.23
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.22...v0.5.23
 
 ## 0.5.22 - 2026-11-08
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- fix: share each session store close outcome (#413) ([727e6e5](https://github.com/fitchmultz/pi-cursor-sdk/commit/727e6e51ff676dc11188213919c3b7e393a1484e))
+- fix: share each session store close outcome (#413) ([727e6e5](https://github.com/bittopaz/pi-provider-cursor/commit/727e6e51ff676dc11188213919c3b7e393a1484e))
 
 ### What's Changed
-* fix: share each session-store close outcome by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/413
+* fix: share each session-store close outcome by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/413
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.21...v0.5.22
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.21...v0.5.22
 
 ## 0.5.21 - 2026-11-08
 
 <!-- npm-release:unreleased:start -->
 ### Fixed
 
-- Close a pending `cursor_ask_question` dialog when its turn is aborted. The tool now passes its abort signal to every pi select and text-input dialog, so an RPC `abort`, an extension's `ctx.abort()`, or the bridge's own abort (call deadline, Cursor-side cancellation, session shutdown) records the open question as cancelled, asks no later question and clears `pi-cursor-sdk:ask-question:blocked`. Previously the abort waited until someone answered the dialog. A listed option named exactly `Type a custom answer` now selects that option: the custom-answer entry is then shown as `Type a custom answer (2)`, and with `allowCustom: false` the option no longer opens text input. Answer details keep their existing fields.
+- Close a pending `cursor_ask_question` dialog when its turn is aborted. The tool now passes its abort signal to every pi select and text-input dialog, so an RPC `abort`, an extension's `ctx.abort()`, or the bridge's own abort (call deadline, Cursor-side cancellation, session shutdown) records the open question as cancelled, asks no later question and clears `pi-provider-cursor:ask-question:blocked`. Previously the abort waited until someone answered the dialog. A listed option named exactly `Type a custom answer` now selects that option: the custom-answer entry is then shown as `Type a custom answer (2)`, and with `allowCustom: false` the option no longer opens text input. Answer details keep their existing fields.
 <!-- npm-release:unreleased:end -->
 
-- fix: cancel Cursor questions with their owning tool (#414) ([af0697e](https://github.com/fitchmultz/pi-cursor-sdk/commit/af0697e4fd3a387fff156b81e0c4e8cf0995226d))
+- fix: cancel Cursor questions with their owning tool (#414) ([af0697e](https://github.com/bittopaz/pi-provider-cursor/commit/af0697e4fd3a387fff156b81e0c4e8cf0995226d))
 
 ### What's Changed
-* fix: cancel Cursor questions with their owning tool by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/414
+* fix: cancel Cursor questions with their owning tool by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/414
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.20...v0.5.21
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.20...v0.5.21
 
 ## 0.5.20 - 2026-11-08
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- fix: restore only the owned MCP timeout wrapper (#417) ([aeadc9e](https://github.com/fitchmultz/pi-cursor-sdk/commit/aeadc9e79c91189e6aad00289d01201844a9da02))
+- fix: restore only the owned MCP timeout wrapper (#417) ([aeadc9e](https://github.com/bittopaz/pi-provider-cursor/commit/aeadc9e79c91189e6aad00289d01201844a9da02))
 
 ### What's Changed
-* fix: restore only the owned MCP timeout wrapper by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/417
+* fix: restore only the owned MCP timeout wrapper by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/417
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.19...v0.5.20
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.19...v0.5.20
 
 ## 0.5.19 - 2026-11-07
 
@@ -423,13 +423,13 @@
 - Publish concurrent builds of one checkout one at a time, so one build's rollback can never put an older build over another build's output. Builds still compile in parallel, then take an OS file lock on `dist.lock` (an exclusive `node:sqlite` transaction) only to publish; the OS releases it if a build crashes, so a dead build never blocks the next one. A successful build now always publishes its own output and no longer prints "dist/ was published by a concurrent build". On Node 24 releases before 24.15, loading `node:sqlite` prints Node's ExperimentalWarning.
 <!-- npm-release:unreleased:end -->
 
-- Preserve build output across failed concurrent publication (#431) ([760cea4](https://github.com/fitchmultz/pi-cursor-sdk/commit/760cea470f76c2aa5bb4ca50e7f48e13ba41054f))
+- Preserve build output across failed concurrent publication (#431) ([760cea4](https://github.com/bittopaz/pi-provider-cursor/commit/760cea470f76c2aa5bb4ca50e7f48e13ba41054f))
 
 ### What's Changed
-* Preserve build output across failed concurrent publication by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/431
+* Preserve build output across failed concurrent publication by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/431
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.18...v0.5.19
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.18...v0.5.19
 
 ## 0.5.18 - 2026-11-07
 
@@ -439,26 +439,26 @@
 - Report Cursor SDK event-debug wait results and finalization truthfully. `summary.json` reports `waitResultRecorded: true` only when `wait-result.json` was actually written; a failed write is listed in `errors.jsonl` as `wait_result` and is not replaced by a later fallback result. Finalization still waits for the run's stream capture, then stops recording: later records no longer write artifacts or change counts, and a failed finalization keeps its original error without retrying. Provider results are unchanged.
 <!-- npm-release:unreleased:end -->
 
-- fix: keep SDK debug finalization truthful and stable (#424) ([6102de6](https://github.com/fitchmultz/pi-cursor-sdk/commit/6102de6308a36b363144697b1c0d08a603412686))
+- fix: keep SDK debug finalization truthful and stable (#424) ([6102de6](https://github.com/bittopaz/pi-provider-cursor/commit/6102de6308a36b363144697b1c0d08a603412686))
 
 ### What's Changed
-* fix: keep SDK debug finalization truthful and stable by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/424
+* fix: keep SDK debug finalization truthful and stable by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/424
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.17...v0.5.18
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.17...v0.5.18
 
 ## 0.5.17 - 2026-11-07
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- docs: clarify the shared HTTP transport record contract (#427) ([2a35e79](https://github.com/fitchmultz/pi-cursor-sdk/commit/2a35e79eca96ce7a2ac80ed1c26d3dc82c2fa4e0))
+- docs: clarify the shared HTTP transport record contract (#427) ([2a35e79](https://github.com/bittopaz/pi-provider-cursor/commit/2a35e79eca96ce7a2ac80ed1c26d3dc82c2fa4e0))
 
 ### What's Changed
-* docs: explain shared Cursor transport ownership by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/427
+* docs: explain shared Cursor transport ownership by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/427
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.16...v0.5.17
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.16...v0.5.17
 
 ## 0.5.16 - 2026-11-07
 
@@ -468,65 +468,65 @@
 - Wait for bridge cleanup to finish when disposal and session shutdown overlap. All callers now wait for the loopback endpoint and listener to close.
 <!-- npm-release:unreleased:end -->
 
-- fix: await shared bridge disposal completion (#415) ([48866be](https://github.com/fitchmultz/pi-cursor-sdk/commit/48866be20e20f904165fd858d0bcdb6a2f1c46d0))
+- fix: await shared bridge disposal completion (#415) ([48866be](https://github.com/bittopaz/pi-provider-cursor/commit/48866be20e20f904165fd858d0bcdb6a2f1c46d0))
 
 ### What's Changed
-* fix: await shared bridge disposal completion by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/415
+* fix: await shared bridge disposal completion by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/415
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.15...v0.5.16
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.15...v0.5.16
 
 ## 0.5.15 - 2026-11-07
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- docs: focus verification on changed behavior (#423) ([de6c3ed](https://github.com/fitchmultz/pi-cursor-sdk/commit/de6c3ed859768871a86ee51e94d41df09a76da50))
+- docs: focus verification on changed behavior (#423) ([de6c3ed](https://github.com/bittopaz/pi-provider-cursor/commit/de6c3ed859768871a86ee51e94d41df09a76da50))
 
 ### What's Changed
-* docs: adopt focused verification and meaningful tests by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/423
+* docs: adopt focused verification and meaningful tests by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/423
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.14...v0.5.15
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.14...v0.5.15
 
 ## 0.5.14 - 2026-11-07
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- refactor: keep invalid-mode notice receipts with the session manager (#411) ([152cae7](https://github.com/fitchmultz/pi-cursor-sdk/commit/152cae70cd05e216d1ba030615a35a050ae90626))
+- refactor: keep invalid-mode notice receipts with the session manager (#411) ([152cae7](https://github.com/bittopaz/pi-provider-cursor/commit/152cae70cd05e216d1ba030615a35a050ae90626))
 
 ### What's Changed
-* refactor: keep invalid-mode notice receipts with the session manager by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/411
+* refactor: keep invalid-mode notice receipts with the session manager by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/411
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.13...v0.5.14
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.13...v0.5.14
 
 ## 0.5.13 - 2026-11-07
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- refactor: group shell-output state by call (#412) ([74804c7](https://github.com/fitchmultz/pi-cursor-sdk/commit/74804c764694433a1bfc0615d6ae08642da2c54b))
+- refactor: group shell-output state by call (#412) ([74804c7](https://github.com/bittopaz/pi-provider-cursor/commit/74804c764694433a1bfc0615d6ae08642da2c54b))
 
 ### What's Changed
-* refactor: keep shell-output attribution in per-call records by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/412
+* refactor: keep shell-output attribution in per-call records by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/412
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.12...v0.5.13
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.12...v0.5.13
 
 ## 0.5.12 - 2026-11-06
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- test: compare native replay renders by visible text (#420) ([650d89f](https://github.com/fitchmultz/pi-cursor-sdk/commit/650d89f1c6c34518f47a0407f682c677bd74f31c))
+- test: compare native replay renders by visible text (#420) ([650d89f](https://github.com/bittopaz/pi-provider-cursor/commit/650d89f1c6c34518f47a0407f682c677bd74f31c))
 
 ### What's Changed
-* test: compare native replay renders by visible text by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/420
+* test: compare native replay renders by visible text by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/420
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.11...v0.5.12
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.11...v0.5.12
 
 ## 0.5.11 - 2026-11-04
 
@@ -536,76 +536,76 @@
 - Serve Cursor requests in hosts that share one ModelRuntime and register providers only from a session-less bootstrap load, such as PI WEB. Every request previously failed with "Cursor provider binding is not active" because the only accepted registration belonged to an extension instance that never started. A registration whose session never started now serves the bound, active session that issued the request receipt, with that session's scope, compaction/tree purpose, bridge, replay state and cloud recorder. Receipts are shared process-wide because Pi evaluates each extension instance with its own module graph. Unbound or shut-down sessions, receipt-less calls and shut-down registrations still fail closed, and a started registration still rejects sibling receipts. The turn runs in the session's own module, so its agent pool, settings and lifecycle stay with that session. Such sessions follow the native provider's catalog issue and model metadata, including after a composed wrapper or a later registration replaces the provider, so a live catalog refresh clears their startup "missing API key" fallback warning instead of repeating it. Live LOCAL agent claims and HTTP/1 override ownership are process-wide across module copies. Same-file sessions cannot resume each other's live agents, and shutdown resets the transport only when no started live session remains, ignoring siblings marked stale by direct disposal. An unstarted registration does not keep the override alive, and its offline refresh does not replace a live catalog with a missing-key fallback when composed auth is not on the refresh credential. Catalog subscriptions use weak references so they do not retain disposed extension copies. The next catalog publication removes stale subscriptions without notifying disposed sessions.
 <!-- npm-release:unreleased:end -->
 
-- Merge pull request #390 from rickycabugawan/fix/shared-runtime-provider-binding ([85f4c5a](https://github.com/fitchmultz/pi-cursor-sdk/commit/85f4c5a18dbc311c4e66c3b78084dfb0398e2e00))
+- Merge pull request #390 from rickycabugawan/fix/shared-runtime-provider-binding ([85f4c5a](https://github.com/bittopaz/pi-provider-cursor/commit/85f4c5a18dbc311c4e66c3b78084dfb0398e2e00))
 
 ### What's Changed
-* Fix shared-runtime Cursor provider ownership by @rickycabugawan in https://github.com/fitchmultz/pi-cursor-sdk/pull/390
+* Fix shared-runtime Cursor provider ownership by @rickycabugawan in https://github.com/bittopaz/pi-provider-cursor/pull/390
 
 ### New Contributors
-* @rickycabugawan made their first contribution in https://github.com/fitchmultz/pi-cursor-sdk/pull/390
+* @rickycabugawan made their first contribution in https://github.com/bittopaz/pi-provider-cursor/pull/390
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.10...v0.5.11
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.10...v0.5.11
 
 ## 0.5.10 - 2026-11-03
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- Merge pull request #404 from fitchmultz/npm-version-queue-1 ([e9d8b51](https://github.com/fitchmultz/pi-cursor-sdk/commit/e9d8b513bd7e6ecb6ced66ff56b0b4e9a4bd4bf1))
+- Merge pull request #404 from fitchmultz/npm-version-queue-1 ([e9d8b51](https://github.com/bittopaz/pi-provider-cursor/commit/e9d8b513bd7e6ecb6ced66ff56b0b4e9a4bd4bf1))
 
 ### What's Changed
-* Coalesce queued npm version runs by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/404
-* Restore queue: max and the final newline in npm-version.yml by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/405
-* Skip no-op releases and restate malformed remediation dispositions by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/407
+* Coalesce queued npm version runs by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/404
+* Restore queue: max and the final newline in npm-version.yml by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/405
+* Skip no-op releases and restate malformed remediation dispositions by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/407
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.9...v0.5.10
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.9...v0.5.10
 
 ## 0.5.9 - 2026-11-02
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- Recheck unreported Cursor reviews in automatic releases (#402) ([c587ba6](https://github.com/fitchmultz/pi-cursor-sdk/commit/c587ba6594b8a63c49486c206a5349bdf0d9f5bc))
+- Recheck unreported Cursor reviews in automatic releases (#402) ([c587ba6](https://github.com/bittopaz/pi-provider-cursor/commit/c587ba6594b8a63c49486c206a5349bdf0d9f5bc))
 
 ### What's Changed
-* Recheck unreported Cursor reviews in automatic releases by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/402
+* Recheck unreported Cursor reviews in automatic releases by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/402
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.8...v0.5.9
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.8...v0.5.9
 
 ## 0.5.8 - 2026-11-02
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- Raise the Pi floor to 1.5.0 (#400) ([10d8523](https://github.com/fitchmultz/pi-cursor-sdk/commit/10d85236a00a59b8422e17a530412aff6c715236))
+- Raise the Pi floor to 1.5.0 (#400) ([10d8523](https://github.com/bittopaz/pi-provider-cursor/commit/10d85236a00a59b8422e17a530412aff6c715236))
 
 ### What's Changed
-* Raise the Pi floor to 1.5.0 by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/400
+* Raise the Pi floor to 1.5.0 by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/400
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.7...v0.5.8
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.7...v0.5.8
 
 ## 0.5.7 - 2026-11-01
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- Reconcile queued version source commit [d82e5a3](https://github.com/fitchmultz/pi-cursor-sdk/commit/d82e5a391285c88079fc3e90983d985bae77af7c) (`Merge pull request #397 from fitchmultz/fix/npm12-manager-scripts`), which is already an ancestor of `v0.5.6` (`4dc13ea`).
+- Reconcile queued version source commit [d82e5a3](https://github.com/bittopaz/pi-provider-cursor/commit/d82e5a391285c88079fc3e90983d985bae77af7c) (`Merge pull request #397 from fitchmultz/fix/npm12-manager-scripts`), which is already an ancestor of `v0.5.6` (`4dc13ea`).
 
 ### Changed
 
 - Version-only metadata release (`package.json`, `package-lock.json`, and `CHANGELOG.md`). All functional and workflow changes from #397 already shipped in `0.5.6`; `v0.5.6...v0.5.7` contains no runtime, build, or dependency changes.
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.6...v0.5.7
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.6...v0.5.7
 
 ## 0.5.6 - 2026-11-01
 
 <!-- npm-release:unreleased:start -->
 <!-- npm-release:unreleased:end -->
 
-- Merge pull request #395 from fitchmultz/task/npm-zod-release-gate ([49e7f8d](https://github.com/fitchmultz/pi-cursor-sdk/commit/49e7f8dbcfb6bf76b3f550f49ffd7d3f547cc9ab))
+- Merge pull request #395 from fitchmultz/task/npm-zod-release-gate ([49e7f8d](https://github.com/bittopaz/pi-provider-cursor/commit/49e7f8dbcfb6bf76b3f550f49ffd7d3f547cc9ab))
 
 ### Changed
 
@@ -619,12 +619,12 @@
 Cursor runtime behavior and runtime dependency versions are unchanged.
 
 ### What's Changed
-* Qualify exact review scopes before release (1/3) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/393
-* Bind prospective release reviews to the open PR (2/3) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/394
-* Gate automatic Cursor releases on exact-candidate review (3/3) by @fitchmultz in https://github.com/fitchmultz/pi-cursor-sdk/pull/395
+* Qualify exact review scopes before release (1/3) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/393
+* Bind prospective release reviews to the open PR (2/3) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/394
+* Gate automatic Cursor releases on exact-candidate review (3/3) by @fitchmultz in https://github.com/bittopaz/pi-provider-cursor/pull/395
 
 
-**Full Changelog**: https://github.com/fitchmultz/pi-cursor-sdk/compare/v0.5.5...v0.5.6
+**Full Changelog**: https://github.com/bittopaz/pi-provider-cursor/compare/v0.5.5...v0.5.6
 
 ## 0.5.5
 
@@ -671,7 +671,7 @@ Cursor runtime behavior and runtime dependency versions are unchanged.
 - Refresh the fallback catalog from the authenticated SDK 1.0.37 catalog-only observation on 2026-10-22: 48 models, adding Gemini 4 Argon (`gemini-4-argon`) and Muse Wonder (`muse-wonder-1.0`) while preserving all 46 prior records. Keep the 33 bundled checkpoint-derived entries unchanged; no Agent/model turn or Cloud run was performed.
 - Prefer the currently exposed Pi tool capabilities, schemas and prompt guidelines instead of hardcoded historical MCP/delegation names. Dynamic registry mapping remains unchanged; this is not qualification of the original Windows bridge report (#206).
 - Rewrite the README around installation and everyday use, add a diagram of Cursor inside Pi, and move detailed configuration and maintainer procedures into linked reference pages.
-- Align locked development Pi snapshots and their resolved Pi cohort to 1.1.0 ([#353](https://github.com/fitchmultz/pi-cursor-sdk/pull/353)). This is development-only maintenance, not a user runtime Pi upgrade or a new npm publication. Node 24+, official Pi 0.87.1+, optional wildcard Pi/TypeBox peers, and exact unbundled Cursor SDK 1.0.37 remain unchanged; published 0.5.3 and historical qualification evidence retain their original source/version attribution.
+- Align locked development Pi snapshots and their resolved Pi cohort to 1.1.0 ([#353](https://github.com/bittopaz/pi-provider-cursor/pull/353)). This is development-only maintenance, not a user runtime Pi upgrade or a new npm publication. Node 24+, official Pi 0.87.1+, optional wildcard Pi/TypeBox peers, and exact unbundled Cursor SDK 1.0.37 remain unchanged; published 0.5.3 and historical qualification evidence retain their original source/version attribution.
 - Consolidate redundant tests and unused internal exports/wrappers while retaining native, installed-SDK and persistence boundary owners (#360, #363). Improve fixture contracts for user/custom start events without widening runtime APIs (#361). Make installed-SDK bootstrap-printer fixtures select and restore their terminal environment even under `TERM=dumb`, preserving ANSI and confinement assertions.
 - Use the reviewed automatic npm release workflow: an intentional versioned PR merged to main triggers qualification and publication without a new approval step. This candidate does not change publisher policy, authentication, protections or workflow pins (#362).
 
@@ -934,7 +934,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 
 ### Added
 
-- Emit `pi-cursor-sdk:ask-question:blocked` (`{ active: boolean }`) while `cursor_ask_question` awaits pi UI input, and clear it in `finally`. Consumers (e.g. Herdr) can subscribe and map it to blocked/working; listening is out of scope for this package.
+- Emit `pi-provider-cursor:ask-question:blocked` (`{ active: boolean }`) while `cursor_ask_question` awaits pi UI input, and clear it in `finally`. Consumers (e.g. Herdr) can subscribe and map it to blocked/working; listening is out of scope for this package.
 - Record each distinct local Cursor agent whose send is initiated once per native pi session in a non-resumable `cursor-sdk-agent-lineage` custom entry, including failed/cancelled runs and when local resume is disabled.
 
 ### Fixed
@@ -1125,7 +1125,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 ### Validation
 
 - `npm run verify` passes against package version `0.1.51` (`check:platform-smoke`, `typecheck`, and `npm test` with 794 tests).
-- `npm pack --dry-run` produces `pi-cursor-sdk-0.1.51.tgz` without bundling `@cursor/sdk` or its transport tree; a temp consumer install resolves `@connectrpc/connect-node` from the `@cursor/sdk@1.0.22` dependency path, `npm ls @connectrpc/connect-node undici` is coherent, and the SDK imports successfully.
+- `npm pack --dry-run` produces `pi-provider-cursor-0.1.51.tgz` without bundling `@cursor/sdk` or its transport tree; a temp consumer install resolves `@connectrpc/connect-node` from the `@cursor/sdk@1.0.22` dependency path, `npm ls @connectrpc/connect-node undici` is coherent, and the SDK imports successfully.
 - `npm run smoke:platform:all` passes on macOS, Ubuntu, and Windows native with Cursor auth (platform-build, native-replay visual matrix, bridge visual matrix, abort cleanup, packed installs, PTY/ConPTY capture, JSONL assertions, redaction scans). Artifact index: `.artifacts/platform-smoke/latest.json`.
 - `npm audit --audit-level=low` reports 3 upstream advisories in the SDK-owned `@connectrpc/connect-node -> undici@5.29.0` tree with no npm-provided fix; this release keeps npm dependency resolution coherent rather than bundling a mismatched transport override.
 
@@ -1160,7 +1160,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 
 ### Fixed
 
-- Bundle Cursor's Node ConnectRPC transport seam with `undici` `7.28.0` so downstream `pi install npm:pi-cursor-sdk` production installs inherit the audited transport dependency instead of npm's root-only `overrides` fix.
+- Bundle Cursor's Node ConnectRPC transport seam with `undici` `7.28.0` so downstream `pi install npm:pi-provider-cursor` production installs inherit the audited transport dependency instead of npm's root-only `overrides` fix.
 
 ## 0.1.47 - 2026-06-22
 
@@ -1394,7 +1394,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 
 ### Changed
 
-- Clarify setup docs and runtime auth messages: `pi-cursor-sdk` requires a Cursor SDK API key and does not reuse Cursor Agent CLI/Desktop login or subscription auth.
+- Clarify setup docs and runtime auth messages: `pi-provider-cursor` requires a Cursor SDK API key and does not reuse Cursor Agent CLI/Desktop login or subscription auth.
 - `/cursor-refresh-models` now forces a live catalog refresh, bypassing the on-disk cache and rewriting it. A previously cached catalog is preferred over the bundled fallback when a live refresh fails.
 - Lazy-load the Cursor SDK runtime so warm cached startup paths avoid importing `@cursor/sdk` until live model discovery or a Cursor turn needs it (#100).
 
@@ -1457,7 +1457,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 ### Maintainer
 
 - Add `npm run smoke:visual` for offscreen TUI visual smoke (ANSI/text/HTML/PNG/JSONL).
-- Add [Cursor dogfood checklist](https://github.com/fitchmultz/pi-cursor-sdk/blob/main/docs/cursor-dogfood-checklist.md) and tighten live/visual smoke env isolation for pi 0.76 `--session-id`, plan mode, and native-replay card proof.
+- Add [Cursor dogfood checklist](https://github.com/bittopaz/pi-provider-cursor/blob/main/docs/cursor-dogfood-checklist.md) and tighten live/visual smoke env isolation for pi 0.76 `--session-id`, plan mode, and native-replay card proof.
 - Add package metadata regression tests for the SDK/pi cutover baselines.
 
 ## 0.1.20 - 2026-05-26
@@ -1523,7 +1523,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 - Add `scripts/isolated-cursor-smoke.sh` and `npm run smoke:isolated` for packed `/tmp` install smoke with seeded `auth.json`, plan-strip shim, and JSONL replay-error scans.
 - Add `scripts/fixtures/plan-strip-shim/` to simulate plan-mode execute stripping active tools to `read`, `bash`, `edit`, and `write`.
 - Extend `scripts/validate-smoke-jsonl.mjs` with `--replay-errors` and `--replay-errors-only` to fail on persisted `Tool grep/cursor/find/ls not found` entries.
-- Add [Cursor testing lessons](https://github.com/fitchmultz/pi-cursor-sdk/blob/main/docs/cursor-testing-lessons.md) documenting auth.json seeding, isolated harness layout, JSONL replay scans, and the plan-mode replay regression chain.
+- Add [Cursor testing lessons](https://github.com/bittopaz/pi-provider-cursor/blob/main/docs/cursor-testing-lessons.md) documenting auth.json seeding, isolated harness layout, JSONL replay scans, and the plan-mode replay regression chain.
 - Add regression coverage in `test/cursor-native-replay-stress.test.ts`, `test/cursor-native-replay-trace.test.ts`, `test/cursor-native-replay-routing.test.ts`, and expanded live-run / extension lifecycle tests.
 
 ### Changed
@@ -1576,7 +1576,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 
 - Reuse Cursor SDK agents within the same pi session when model, API key, cwd, bridge surface, and pi context remain compatible, sending incremental follow-up prompts instead of re-bootstrapping full history on every turn.
 - Add context fingerprinting to choose bootstrap vs incremental `Agent.send()` prompts, including branch and compaction summary detection after `/tree` navigation and session compaction.
-- Add a manual [Cursor live smoke checklist](https://github.com/fitchmultz/pi-cursor-sdk/blob/main/docs/cursor-live-smoke-checklist.md) for release validation with real `pi -e . --cursor-no-fast --model cursor/composer-2.5` runs, diagnostics safety scans, TUI observation, bridge/replay checks, abort/cancel coverage, and an assume-everything-is-in-scope no-optional/no-deferred release rule.
+- Add a manual [Cursor live smoke checklist](https://github.com/bittopaz/pi-provider-cursor/blob/main/docs/cursor-live-smoke-checklist.md) for release validation with real `pi -e . --cursor-no-fast --model cursor/composer-2.5` runs, diagnostics safety scans, TUI observation, bridge/replay checks, abort/cancel coverage, and an assume-everything-is-in-scope no-optional/no-deferred release rule.
 - Share the Cursor pi bridge contract through provider prompts and bridged MCP tool descriptions via `src/cursor-bridge-contract.ts`.
 - Isolate Cursor usage and live-run accounting in `src/cursor-usage-accounting.ts` and `src/cursor-live-run-accounting.ts`.
 
@@ -1639,7 +1639,7 @@ These changes are carried into 0.5.2; this section does not record a successful 
 ## 0.1.12 - 2026-05-18
 
 ### Fixed
-- Bundle the audited `@cursor/sdk` dependency tree so `pi install npm:pi-cursor-sdk` preserves patched `sqlite3`, `tar`, and `undici` transitive versions even though npm package-level `overrides` are not applied when the package is installed as a dependency.
+- Bundle the audited `@cursor/sdk` dependency tree so `pi install npm:pi-provider-cursor` preserves patched `sqlite3`, `tar`, and `undici` transitive versions even though npm package-level `overrides` are not applied when the package is installed as a dependency.
 
 ## 0.1.11 - 2026-05-18
 
