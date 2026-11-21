@@ -34,7 +34,7 @@ function assistantBlock(block: TextContent | ThinkingContent | ToolCall): string
 		case "thinking":
 			return "";
 		case "toolCall":
-			return `[tool ${block.name}] ${JSON.stringify(block.arguments)}`;
+			return `The ${block.name} tool already ran with ${JSON.stringify(block.arguments)}.`;
 		default: {
 			const unreachable: never = block;
 			return unreachable;
@@ -58,6 +58,30 @@ function roleLabel(message: UserMessage | AssistantMessage | ToolResultMessage):
 	if (message.role === "user") return "User";
 	if (message.role === "assistant") return "Assistant";
 	return `Tool result (${message.toolName})`;
+}
+
+export function cursorPromptImages(messages: readonly Message[]): { data: string; mimeType: string }[] {
+	const images: { data: string; mimeType: string }[] = [];
+	for (const message of messages) {
+		if (message.role !== "user" && message.role !== "toolResult") continue;
+		if (typeof message.content === "string") continue;
+		for (const block of message.content) {
+			if (block.type !== "image") continue;
+			if (block.data.length === 0 || block.mimeType.length === 0) continue;
+			images.push({ data: block.data, mimeType: block.mimeType });
+		}
+	}
+	return images;
+}
+
+export function cursorPendingUserText(messages: readonly Message[]): string {
+	const parts: string[] = [];
+	for (const message of messages) {
+		if (message.role !== "user") continue;
+		const text = messageText(message).trim();
+		if (text) parts.push(text);
+	}
+	return parts.join("\n\n");
 }
 
 export function buildCursorPrompt(messages: readonly Message[]): string {

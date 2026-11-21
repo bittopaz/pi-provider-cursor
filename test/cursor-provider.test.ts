@@ -21,7 +21,8 @@ vi.mock("@cursor/sdk", () => ({
 	},
 }));
 
-import { streamCursor } from "../src/cursor-provider.js";
+import { cursorModelFromListItem } from "../src/cursor-models.js";
+import { resetCursorSession, setCursorToolSource, streamCursor } from "../src/cursor-provider.js";
 
 const model = {
 	id: "test-model",
@@ -61,9 +62,11 @@ function transcript(messages: Parameters<typeof normalizeContext>[0]["messages"]
 }
 
 describe("streamCursor", () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		sdk.create.mockReset();
 		sdk.storeDirs.length = 0;
+		setCursorToolSource(() => []);
+		await resetCursorSession();
 	});
 
 	it("reports a missing API key and does not create an agent", async () => {
@@ -111,8 +114,8 @@ describe("streamCursor", () => {
 		});
 	});
 
-	it("sends tool-call arguments and omits image bytes", async () => {
-		const send = vi.fn(async (_text: string) => ({
+	it("sends tool-call arguments and attaches image bytes", async () => {
+		const send = vi.fn(async (_message: string | { text: string; images?: { data: string; mimeType: string }[] }) => ({
 			wait: async () => ({ status: "finished", result: "ok" }),
 			cancel: async () => undefined,
 		}));
@@ -141,16 +144,117 @@ describe("streamCursor", () => {
 		]), { apiKey: "test-key" }).result();
 
 		expect(message.stopReason).toBe("stop");
-		const text = String(send.mock.calls[0]?.[0]);
-		expect(text).toContain('[tool read] {"path":"README.md"}');
-		expect(text).toContain("see this");
-		expect(text).not.toContain("image-bytes-marker");
-		expect(text).not.toContain("hidden-reasoning-marker");
+		const payload = send.mock.calls[0]?.[0];
+		if (typeof payload !== "object" || payload === null) throw new Error("expected an SDK image message");
+		expect(payload.text).not.toContain("[tool read]");
+		expect(payload.text).toContain('The read tool already ran with {"path":"README.md"}.');
+		expect(payload.text).toContain("see this");
+		expect(payload.text).not.toContain("image-bytes-marker");
+		expect(payload.text).not.toContain("hidden-reasoning-marker");
+		expect(payload.images).toEqual([{ data: "image-bytes-marker", mimeType: "image/png" }]);
+	});
+
+	function listedModel(item: Parameters<typeof cursorModelFromListItem>[0]): Model<"cursor-sdk"> {
+		const listed = cursorModelFromListItem(item);
+		if (listed.type === "image" || listed.type === "classifier") throw new Error("expected a chat model");
+		return {
+			...model,
+			id: listed.id,
+			name: listed.name,
+			reasoning: listed.reasoning,
+			thinkingLevelMap: listed.thinkingLevelMap,
+			samplingParams: listed.samplingParams,
+		};
+	}
+
+	function finishedAgent(send: ReturnType<typeof vi.fn>) {
+		sdk.create.mockResolvedValue({
+			send,
+			getUsage: async () => ({ usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0 }, runs: [] }),
+			[Symbol.asyncDispose]: async () => undefined,
+		});
+	}
+
+	it("sends the selected thinking level as the catalog parameter", async () => {
+		const send = vi.fn(async (_text: string, options?: { model?: unknown; onDelta?: (update: unknown) => void }) => ({
+			wait: async () => ({ status: "finished", result: "ok" }),
+			cancel: async () => undefined,
+			options,
+		}));
+		finishedAgent(send);
+		const thinkingModel = listedModel({
+			id: "grok-4.7",
+			displayName: "Grok 4.7",
+			parameters: [{
+				id: "reasoning_effort",
+				values: [
+					{ value: "low" },
+					{ value: "medium" },
+					{ value: "high" },
+					{ value: "xhigh" },
+				],
+			}],
+		});
+
+		const selected = await streamCursor(thinkingModel, transcript([
+			{ role: "user", content: "ping", timestamp: 1 },
+		]), { apiKey: "test-key", reasoning: "high" }).result();
+		expect(selected.stopReason).toBe("stop");
+		const selection = { id: "grok-4.7", params: [{ id: "reasoning_effort", value: "high" }] };
+		expect(sdk.create.mock.calls[0]?.[0].model).toEqual(selection);
+		expect(send.mock.calls[0]?.[1]).toEqual({ model: selection, onDelta: expect.any(Function) });
+
+		sdk.create.mockClear();
+		finishedAgent(send);
+		const omitted = await streamCursor(thinkingModel, transcript([
+			{ role: "user", content: "ping", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+		expect(omitted.stopReason).toBe("stop");
+		expect(sdk.create.mock.calls[0]?.[0].model).toEqual({ id: "grok-4.7" });
+
+		const grok46 = listedModel({
+			id: "grok-4.6",
+			displayName: "Grok 4.6",
+			parameters: [{
+				id: "effort",
+				values: [{ value: "low" }, { value: "medium" }, { value: "high" }, { value: "xhigh" }],
+			}],
+		});
+		sdk.create.mockClear();
+		finishedAgent(send);
+		const effort = await streamCursor(grok46, transcript([
+			{ role: "user", content: "ping", timestamp: 1 },
+		]), { apiKey: "test-key", reasoning: "xhigh" }).result();
+		expect(effort.stopReason).toBe("stop");
+		expect(sdk.create.mock.calls[0]?.[0].model).toEqual({
+			id: "grok-4.6",
+			params: [{ id: "effort", value: "xhigh" }],
+		});
+
+		const deepseek = listedModel({
+			id: "deepseek-v41-flash-1017",
+			displayName: "DeepSeek",
+			parameters: [{
+				id: "reasoning_effort",
+				values: [{ value: "none" }, { value: "low" }, { value: "high" }, { value: "max" }],
+			}],
+		});
+		sdk.create.mockClear();
+		finishedAgent(send);
+		const off = await streamCursor(deepseek, transcript([
+			{ role: "user", content: "ping", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+		expect(off.stopReason).toBe("stop");
+		expect(sdk.create.mock.calls[0]?.[0].model).toEqual({
+			id: "deepseek-v41-flash-1017",
+			params: [{ id: "reasoning_effort", value: "none" }],
+		});
 	});
 
 	it("maps a text delta onto the assistant message", async () => {
 		sdk.create.mockResolvedValue({
-			send: vi.fn(async (_text: string, options: { onDelta: (args: { update: { type: "text-delta"; text: string } }) => void }) => {
+			send: vi.fn(async (_text: string, options: { onDelta: (args: { update: { type: "text-delta"; text: string } | { type: "model-call-completed"; modelCallId: string; usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number } } }) => void }) => {
+				options.onDelta({ update: { type: "model-call-completed", modelCallId: "call-1", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 } } });
 				options.onDelta({ update: { type: "text-delta", text: "pong" } });
 				return {
 					wait: async () => ({ status: "finished", result: "pong" }),
@@ -168,6 +272,41 @@ describe("streamCursor", () => {
 		expect(message.stopReason).toBe("stop");
 		expect(message.content).toEqual([{ type: "text", text: "pong" }]);
 		expect(message.usage.output).toBe(1);
+		expect(message.usage.totalTokens).toBe(2);
+	});
+
+	it("uses the last model call as context size when the agent bill is larger", async () => {
+		sdk.create.mockResolvedValue({
+			send: vi.fn(async (_text: string, options: { onDelta: (args: { update: { type: "text-delta"; text: string } | { type: "model-call-completed"; modelCallId: string; usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number } } }) => void }) => {
+				options.onDelta({ update: { type: "model-call-completed", modelCallId: "call-1", usage: { inputTokens: 1000, outputTokens: 10, cacheReadTokens: 400, cacheWriteTokens: 0 } } });
+				options.onDelta({ update: { type: "model-call-completed", modelCallId: "call-2", usage: { inputTokens: 1200, outputTokens: 20, cacheReadTokens: 500, cacheWriteTokens: 0 } } });
+				options.onDelta({ update: { type: "text-delta", text: "done" } });
+				return {
+					wait: async () => ({
+						status: "finished",
+						result: "done",
+						usage: { inputTokens: 908596, outputTokens: 16228, cacheReadTokens: 837248, cacheWriteTokens: 0, totalTokens: 924824 },
+					}),
+					cancel: async () => undefined,
+				};
+			}),
+			getUsage: async () => ({
+				usage: { inputTokens: 908596, outputTokens: 16228, cacheReadTokens: 837248, cacheWriteTokens: 0, totalTokens: 924824 },
+				cost: { rawCostCents: 0, chargedCents: 50 },
+				runs: [],
+			}),
+			[Symbol.asyncDispose]: async () => undefined,
+		});
+
+		const message = await streamCursor(model, transcript([
+			{ role: "user", content: "ping", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+
+		expect(message.usage.totalTokens).toBe(1220);
+		expect(message.usage.input).toBe(700);
+		expect(message.usage.output).toBe(20);
+		expect(message.usage.cacheRead).toBe(500);
+		expect(message.usage.cost.total).toBe(0.5);
 	});
 
 	it("removes the turn store and reports the response", async () => {
@@ -194,7 +333,10 @@ describe("streamCursor", () => {
 		expect(status).toBe(200);
 		const storeDir = sdk.storeDirs[0];
 		expect(storeDir).toEqual(expect.any(String));
-		if (storeDir) expect(existsSync(storeDir)).toBe(false);
+		if (!storeDir) return;
+		expect(existsSync(storeDir)).toBe(true);
+		await resetCursorSession();
+		expect(existsSync(storeDir)).toBe(false);
 	});
 
 	it("keeps going when abort cancellation fails", async () => {
@@ -228,10 +370,12 @@ describe("streamCursor", () => {
 	it("forwards terminal redraws and drops plain sdk logs", async () => {
 		const chunks: string[] = [];
 		const saved = process.stdout.write;
-		process.stdout.write = ((chunk: string | Uint8Array) => {
+		function recordWrite(this: unknown, chunk: string | Uint8Array): boolean {
+			if (this === undefined) throw new TypeError("kWriteMonkeyPatchDefense");
 			chunks.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"));
 			return true;
-		}) as typeof process.stdout.write;
+		}
+		process.stdout.write = recordWrite as typeof process.stdout.write;
 		try {
 			await withMutedSdkOutput(async () => {
 				process.stdout.write("sdk log\n");
@@ -253,5 +397,176 @@ describe("streamCursor", () => {
 		expect(message.stopReason).toBe("error");
 		expect(message.errorMessage).toContain("[redacted]");
 		expect(message.errorMessage).not.toContain(apiKey);
+	});
+
+	it("sends only the new user text while the agent stays up", async () => {
+		const send = vi.fn(async (_text: string) => ({
+			wait: async () => ({ status: "finished" as const, result: "ok" }),
+			cancel: async () => undefined,
+		}));
+		finishedAgent(send);
+
+		const first = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+		const second = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+			assistant("ok"),
+			{ role: "user", content: "second turn", timestamp: 2 },
+		]), { apiKey: "test-key" }).result();
+
+		expect(first.stopReason).toBe("stop");
+		expect(second.stopReason).toBe("stop");
+		expect(sdk.create).toHaveBeenCalledTimes(1);
+		expect(send.mock.calls[1]?.[0]).toBe("second turn");
+		expect(String(send.mock.calls[1]?.[0])).not.toContain("first turn");
+	});
+
+	it("returns the Pi tool call and feeds the result back", async () => {
+		setCursorToolSource(() => [{
+			name: "read",
+			description: "Read file contents",
+			inputSchema: { type: "object", properties: { path: { type: "string" } } },
+		}]);
+		let toolResult: Promise<unknown> | undefined;
+		const send = vi.fn(async (_text: string, options: {
+			local?: { customTools?: { read?: { execute: (args: { path: string }, context: { toolCallId: string }) => Promise<unknown> } } };
+		}) => {
+			const execute = options.local?.customTools?.read?.execute;
+			if (!execute) throw new Error("expected a read custom tool");
+			toolResult = execute({ path: "README.org" }, { toolCallId: "call-1" });
+			return {
+				wait: () => toolResult?.then(
+					(result) => ({ status: "finished" as const, result: `saw ${String(result)}` }),
+					() => ({ status: "cancelled" as const }),
+				),
+				cancel: async () => undefined,
+			};
+		});
+		finishedAgent(send);
+
+		const called = await streamCursor(model, transcript([
+			{ role: "user", content: "read the notes", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+
+		expect(called.stopReason).toBe("toolUse");
+		expect(called.content).toContainEqual({
+			type: "toolCall",
+			id: "call-1",
+			name: "read",
+			arguments: { path: "README.org" },
+		});
+		expect(sdk.create.mock.calls[0]?.[0]).toMatchObject({
+			tools: ["mcp"],
+			local: { settingSources: [], fs: { kind: "empty-fs" } },
+		});
+
+		const answered = await streamCursor(model, transcript([
+			{ role: "user", content: "read the notes", timestamp: 1 },
+			{
+				role: "assistant",
+				content: [{ type: "toolCall", id: "call-1", name: "read", arguments: { path: "README.org" } }],
+				api: "cursor-sdk",
+				provider: "cursor",
+				model: model.id,
+				usage: called.usage,
+				stopReason: "toolUse",
+				timestamp: 2,
+			},
+			{
+				role: "toolResult",
+				toolCallId: "call-1",
+				toolName: "read",
+				content: [{ type: "text", text: "notes body" }],
+				isError: false,
+				timestamp: 3,
+			},
+		]), { apiKey: "test-key" }).result();
+
+		expect(answered.stopReason).toBe("stop");
+		expect(answered.content).toEqual([{ type: "text", text: "saw notes body" }]);
+		expect(sdk.create).toHaveBeenCalledTimes(1);
+		expect(send).toHaveBeenCalledTimes(1);
+		await expect(toolResult).resolves.toBe("notes body");
+	});
+
+	it("renames Cursor file_path to Pi path", async () => {
+		setCursorToolSource(() => [{ name: "read", description: "Read file contents" }]);
+		const send = vi.fn(async (_text: string, options: {
+			local?: { customTools?: { read?: { execute: (args: { file_path: string }, context: { toolCallId: string }) => Promise<unknown> } } };
+		}) => {
+			const execute = options.local?.customTools?.read?.execute;
+			if (!execute) throw new Error("expected a read custom tool");
+			void execute({ file_path: "/tmp/extensions.md" }, { toolCallId: "call-path" }).catch(() => undefined);
+			return {
+				wait: async () => ({ status: "finished" as const, result: "ok" }),
+				cancel: async () => undefined,
+			};
+		});
+		finishedAgent(send);
+
+		const called = await streamCursor(model, transcript([
+			{ role: "user", content: "read the docs", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+
+		expect(called.stopReason).toBe("toolUse");
+		expect(called.content).toContainEqual({
+			type: "toolCall",
+			id: "call-path",
+			name: "read",
+			arguments: { path: "/tmp/extensions.md" },
+		});
+	});
+
+	it("rejects the parked tool and stops the run when Pi aborts", async () => {
+		setCursorToolSource(() => [{ name: "read", description: "Read file contents" }]);
+		const controller = new AbortController();
+		let toolResult: Promise<unknown> | undefined;
+		const send = vi.fn(async (_text: string, options: {
+			local?: { customTools?: { read?: { execute: (args: { path: string }, context: { toolCallId: string }) => Promise<unknown> } } };
+		}) => {
+			const execute = options.local?.customTools?.read?.execute;
+			if (!execute) throw new Error("expected a read custom tool");
+			toolResult = execute({ path: "big.log" }, { toolCallId: "call-9" });
+			return {
+				wait: () => toolResult?.then(
+					() => ({ status: "finished" as const, result: "should-not-continue" }),
+					() => ({ status: "cancelled" as const }),
+				),
+				cancel: async () => undefined,
+			};
+		});
+		finishedAgent(send);
+
+		const called = await streamCursor(model, transcript([
+			{ role: "user", content: "read the log", timestamp: 1 },
+		]), { apiKey: "test-key", signal: controller.signal }).result();
+		expect(called.stopReason).toBe("toolUse");
+		controller.abort();
+		await expect(toolResult).rejects.toThrow("Operation aborted");
+
+		const stopped = await streamCursor(model, transcript([
+			{ role: "user", content: "read the log", timestamp: 1 },
+			{
+				role: "assistant",
+				content: [{ type: "toolCall", id: "call-9", name: "read", arguments: { path: "big.log" } }],
+				api: "cursor-sdk",
+				provider: "cursor",
+				model: model.id,
+				usage: called.usage,
+				stopReason: "toolUse",
+				timestamp: 2,
+			},
+			{
+				role: "toolResult",
+				toolCallId: "call-9",
+				toolName: "read",
+				content: [{ type: "text", text: "Operation aborted" }],
+				isError: true,
+				timestamp: 3,
+			},
+		]), { apiKey: "test-key", signal: controller.signal }).result();
+		expect(stopped.stopReason).toBe("aborted");
+		expect(JSON.stringify(stopped.content)).not.toContain("should-not-continue");
 	});
 });

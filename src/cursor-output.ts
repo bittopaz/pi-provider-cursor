@@ -2,14 +2,22 @@ function chunkText(chunk: string | Uint8Array): string {
 	return typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8");
 }
 
+type StdoutWrite = (
+	this: typeof process.stdout,
+	chunk: string | Uint8Array,
+	encoding?: BufferEncoding | ((error?: Error | null) => void),
+	callback?: (error?: Error | null) => void,
+) => boolean;
+
 function forwardWrite(
 	write: typeof process.stdout.write,
 	chunk: string | Uint8Array,
 	encoding?: BufferEncoding | ((error?: Error | null) => void),
 	callback?: (error?: Error | null) => void,
 ): boolean {
-	if (typeof encoding === "function") return write(chunk, encoding);
-	return write(chunk, encoding, callback);
+	// Bun's stdout writer reads `this`. A bare call throws during a TUI redraw.
+	const invoke = write as StdoutWrite;
+	return invoke.call(process.stdout, chunk, encoding, callback);
 }
 
 function dropWrite(
