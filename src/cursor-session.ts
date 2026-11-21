@@ -124,10 +124,10 @@ export async function runCursorTurn(turn: CursorTurn): Promise<void> {
 		const matched = matchingResults(turn.messages);
 
 		if (parks.size > 0 && matched.length > 0 && !signal?.aborted) {
-			const current = openSink(turn);
+			for (const message of matched) resolvePark(message);
+			openSink(turn);
 			watch(signal);
 			await turn.options?.onResponse?.({ status: 200, headers: {} }, turn.model);
-			for (const message of matched) resolvePark(message);
 			if (live) live.delivered = turn.messages.length;
 			return;
 		}

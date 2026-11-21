@@ -562,6 +562,67 @@ describe("streamCursor", () => {
 		await expect(toolResult).resolves.toBe("notes body");
 	});
 
+	it("continues from a tool result when that tool call is requested again", async () => {
+		setCursorToolSource(() => [{ name: "read", description: "Read file contents" }]);
+		let execute: ((args: { path: string }, context: { toolCallId: string }) => Promise<unknown>) | undefined;
+		let finish: ((result: string) => void) | undefined;
+		const finished = new Promise<{ status: "finished"; result: string }>((resolve) => {
+			finish = (result) => resolve({ status: "finished", result });
+		});
+		const arm = (pending: Promise<unknown>) => {
+			pending.then(
+				(result) => finish?.(`saw ${String(result)}`),
+				() => undefined,
+			);
+		};
+		const send = vi.fn(async (_text: string, options: {
+			local?: { customTools?: { read?: { execute: (args: { path: string }, context: { toolCallId: string }) => Promise<unknown> } } };
+		}) => {
+			execute = options.local?.customTools?.read?.execute;
+			if (!execute) throw new Error("expected a read custom tool");
+			arm(execute({ path: "README.org" }, { toolCallId: "call-1" }));
+			return {
+				wait: () => finished,
+				cancel: async () => undefined,
+			};
+		});
+		finishedAgent(send);
+
+		const called = await streamCursor(model, transcript([
+			{ role: "user", content: "read the notes", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+		expect(called.stopReason).toBe("toolUse");
+		if (!execute) throw new Error("expected the read tool to be registered");
+		arm(execute({ path: "README.org" }, { toolCallId: "call-1" }));
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		const continued = await streamCursor(model, transcript([
+			{ role: "user", content: "read the notes", timestamp: 1 },
+			{
+				role: "assistant",
+				content: [{ type: "toolCall", id: "call-1", name: "read", arguments: { path: "README.org" } }],
+				api: "cursor-sdk",
+				provider: "cursor",
+				model: model.id,
+				usage: called.usage,
+				stopReason: "toolUse",
+				timestamp: 2,
+			},
+			{
+				role: "toolResult",
+				toolCallId: "call-1",
+				toolName: "read",
+				content: [{ type: "text", text: "notes body" }],
+				isError: false,
+				timestamp: 3,
+			},
+		]), { apiKey: "test-key" }).result();
+
+		expect(continued.stopReason).toBe("stop");
+		expect(continued.errorMessage).toBeUndefined();
+		expect(continued.content).toEqual([{ type: "text", text: "saw notes body" }]);
+	});
+
 	it("renames Cursor file_path to Pi path", async () => {
 		setCursorToolSource(() => [{ name: "read", description: "Read file contents" }]);
 		const send = vi.fn(async (_text: string, options: {
