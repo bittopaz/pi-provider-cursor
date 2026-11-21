@@ -182,11 +182,21 @@ describe("loadCursorModels", () => {
 			params: [
 				{ id: "context", value: "500k" },
 				{ id: "reasoning_effort", value: "high" },
+				{ id: "fast", value: "false" },
 			],
 		});
 		expect(cursorModelSelection(grok, undefined)).toEqual({
 			id: "grok-4.7",
-			params: [{ id: "context", value: "500k" }],
+			params: [
+				{ id: "context", value: "500k" },
+				{ id: "fast", value: "false" },
+			],
+		});
+		const composerItem = catalog.find((item) => item.id === "composer-2.5");
+		if (!composerItem) throw new Error("missing composer-2.5");
+		expect(cursorModelSelection(cursorModelFromListItem(composerItem), undefined)).toEqual({
+			id: "composer-2.5",
+			params: [{ id: "fast", value: "false" }],
 		});
 	});
 
@@ -215,6 +225,91 @@ describe("loadCursorModels", () => {
 		expect(remembered.map((item) => item.id)).toEqual(["glm-5p3", "grok-4.7"]);
 		expect(rememberedCursorModels("other-key", dir).map((item) => item.id)).toEqual([FALLBACK_CURSOR_MODEL_ID]);
 		expect(sdk.list).toHaveBeenCalledTimes(1);
+	});
+
+	it("sends fast=false at every thinking level", () => {
+		const grok = cursorModelFromListItem({
+			id: "grok-4.7",
+			displayName: "Grok 4.7",
+			parameters: [
+				parameter("context", ["256k", "500k"]),
+				parameter("reasoning_effort", ["low", "medium", "high", "xhigh"]),
+				parameter("fast", ["false", "true"]),
+			],
+		});
+		const context = { id: "context", value: "500k" };
+		const fast = { id: "fast", value: "false" };
+		expect(cursorModelSelection(grok, "low").params).toEqual([context, { id: "reasoning_effort", value: "low" }, fast]);
+		expect(cursorModelSelection(grok, "medium").params).toEqual([context, { id: "reasoning_effort", value: "medium" }, fast]);
+		expect(cursorModelSelection(grok, "high").params).toEqual([context, { id: "reasoning_effort", value: "high" }, fast]);
+		expect(cursorModelSelection(grok, "xhigh").params).toEqual([context, { id: "reasoning_effort", value: "xhigh" }, fast]);
+		for (const level of ["off", "minimal", "max", undefined]) {
+			expect(cursorModelSelection(grok, level).params).toEqual([context, fast]);
+		}
+
+		const composer = cursorModelFromListItem({
+			id: "composer-2.5",
+			displayName: "Composer 2.5",
+			parameters: [parameter("fast", ["false", "true"])],
+		});
+		for (const level of ["off", "minimal", "low", "medium", "high", "xhigh", "max", undefined]) {
+			expect(cursorModelSelection(composer, level)).toEqual({
+				id: "composer-2.5",
+				params: [fast],
+			});
+		}
+	});
+
+	it("sends fast=false only when the catalog lists that value", () => {
+		const fastOnly = cursorModelFromListItem({
+			id: "composer-2.5",
+			displayName: "Composer 2.5",
+			parameters: [parameter("fast", ["true"])],
+		});
+		expect(cursorModelSelection(fastOnly, "high")).toEqual({ id: "composer-2.5" });
+
+		const noFast = cursorModelFromListItem({
+			id: "kimi-k3",
+			displayName: "Kimi K3",
+			parameters: [parameter("reasoning", ["low", "high"])],
+		});
+		expect(cursorModelSelection(noFast, "high")).toEqual({
+			id: "kimi-k3",
+			params: [{ id: "reasoning", value: "high" }],
+		});
+	});
+
+	it("publishes the documented per-million token rates", () => {
+		expect(cursorModelFromListItem({ id: "grok-4.6", displayName: "Grok 4.6" }).cost).toEqual({
+			input: 2,
+			output: 6,
+			cacheRead: 0.5,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "grok-4.5", displayName: "Grok 4.5" }).cost).toEqual({
+			input: 2,
+			output: 6,
+			cacheRead: 0.5,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "grok-4.7", displayName: "Grok 4.7" }).cost).toEqual({
+			input: 4,
+			output: 12,
+			cacheRead: 1,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "composer-2.5", displayName: "Composer 2.5" }).cost).toEqual({
+			input: 0.5,
+			output: 2.5,
+			cacheRead: 0.2,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "kimi-k3", displayName: "Kimi" }).cost).toEqual({
+			input: 0,
+			output: 0,
+			cacheRead: 0,
+			cacheWrite: 0,
+		});
 	});
 
 	it("does not remember a failed list", async () => {

@@ -416,6 +416,7 @@ function startDrive(run: Run, token: number, turn: CursorTurn): void {
 				current.partial.usage.cost.total = delta / 100;
 				current.partial.usage.cost.totalFromProvider = true;
 			}
+			applyCatalogCost(current.partial.usage, turn.model);
 			if (!current.sawText && result.result) {
 				current.blocks.appendText(result.result);
 				current.sawText = true;
@@ -538,6 +539,16 @@ function promptText(payload: unknown, fallback: string): string {
 		return payload.text;
 	}
 	return fallback;
+}
+
+function applyCatalogCost(usage: Usage, model: Model<Api>): void {
+	const rates = model.cost;
+	usage.cost.input = (rates.input / 1_000_000) * usage.input;
+	usage.cost.output = (rates.output / 1_000_000) * usage.output;
+	usage.cost.cacheRead = (rates.cacheRead / 1_000_000) * usage.cacheRead;
+	usage.cost.cacheWrite = (rates.cacheWrite / 1_000_000) * usage.cacheWrite;
+	if (usage.cost.totalFromProvider) return;
+	usage.cost.total = usage.cost.input + usage.cost.output + usage.cost.cacheRead + usage.cost.cacheWrite;
 }
 
 function applyModelCall(usage: Usage, call: ModelCallTokens | undefined): void {

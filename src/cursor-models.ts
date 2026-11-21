@@ -9,12 +9,24 @@ const THINKING_PARAMETER_IDS = ["reasoning", "reasoning_effort", "effort", "thin
 const THINKING_PARAMETER_KEY = "cursorThinkingParameter";
 const CONTEXT_PARAMETER_KEY = "cursorContextParameter";
 const CONTEXT_VALUE_KEY = "cursorContextValue";
+const FAST_PARAMETER_KEY = "cursorFastParameter";
 const PI_THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 type PiThinkingLevel = (typeof PI_THINKING_LEVELS)[number];
 
 const FALLBACK_CONTEXT_WINDOW = 128_000;
 const FALLBACK_MAX_TOKENS = 16_384;
 const ZERO_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+
+// Dollars per million tokens. https://cursor.com/docs/models-and-pricing (2026-11-21).
+// A dash in the cache-write column is 0. Requests send fast=false, so the
+// fast price rows stay unused. grok-4.7 is the 500k row because that is the
+// context value this provider sends.
+const CATALOG_COST: Readonly<Record<string, typeof ZERO_COST>> = {
+	"composer-2.5": { input: 0.5, output: 2.5, cacheRead: 0.2, cacheWrite: 0 },
+	"grok-4.5": { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+	"grok-4.6": { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+	"grok-4.7": { input: 4, output: 12, cacheRead: 1, cacheWrite: 0 },
+};
 
 const CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
 	"composer-2.5": 200_000,
@@ -48,7 +60,7 @@ function catalogModel(id: string, name: string): CursorCatalogModel {
 		name,
 		reasoning: false,
 		input: ["text", "image"],
-		cost: { ...ZERO_COST },
+		cost: { ...(CATALOG_COST[id] ?? ZERO_COST) },
 		contextWindow: CONTEXT_WINDOWS[id] ?? FALLBACK_CONTEXT_WINDOW,
 		maxTokens: FALLBACK_MAX_TOKENS,
 	};
@@ -87,6 +99,12 @@ function contextParameter(item: ModelListItem, contextWindow: number): { id: str
 	return undefined;
 }
 
+function fastParameterId(item: ModelListItem): string | undefined {
+	const parameter = item.parameters?.find((candidate) => candidate.id === "fast");
+	if (!parameter || !parameterValues(parameter).has("false")) return undefined;
+	return parameter.id;
+}
+
 function thinkingParameter(item: ModelListItem): { id: string; values: Set<string> } | undefined {
 	for (const id of THINKING_PARAMETER_IDS) {
 		const parameter = item.parameters?.find((candidate) => candidate.id === id);
@@ -119,6 +137,8 @@ export function cursorModelFromListItem(item: ModelListItem): ProviderModelConfi
 		samplingParams[CONTEXT_PARAMETER_KEY] = context.id;
 		samplingParams[CONTEXT_VALUE_KEY] = context.value;
 	}
+	const fastId = fastParameterId(item);
+	if (fastId) samplingParams[FAST_PARAMETER_KEY] = fastId;
 	const parameter = thinkingParameter(item);
 	const map = parameter ? thinkingLevelMap(parameter.values) : undefined;
 	if (parameter && map) {
@@ -149,6 +169,10 @@ export function cursorModelSelection(
 	const value = model.thinkingLevelMap?.[level];
 	if (typeof parameterId === "string" && parameterId.length > 0 && typeof value === "string") {
 		params.push({ id: parameterId, value });
+	}
+	const fastId = model.samplingParams?.[FAST_PARAMETER_KEY];
+	if (typeof fastId === "string" && fastId.length > 0) {
+		params.push({ id: fastId, value: "false" });
 	}
 	if (params.length === 0) return { id: model.id };
 	return { id: model.id, params };

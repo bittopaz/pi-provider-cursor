@@ -251,6 +251,37 @@ describe("streamCursor", () => {
 		});
 	});
 
+	it("sends fast=false on the Cursor agent when the catalog lists it", async () => {
+		const send = vi.fn(async (_text: string, _options?: { model?: unknown; onDelta?: (update: unknown) => void }) => ({
+			wait: async () => ({ status: "finished", result: "ok" }),
+			cancel: async () => undefined,
+		}));
+		finishedAgent(send);
+		const fastModel = listedModel({
+			id: "grok-4.7",
+			displayName: "Grok 4.7",
+			parameters: [
+				{ id: "reasoning_effort", values: [{ value: "high" }] },
+				{ id: "fast", values: [{ value: "false" }, { value: "true" }] },
+			],
+		});
+
+		const selected = await streamCursor(fastModel, transcript([
+			{ role: "user", content: "ping", timestamp: 1 },
+		]), { apiKey: "test-key", reasoning: "high" }).result();
+
+		expect(selected.stopReason).toBe("stop");
+		const selection = {
+			id: "grok-4.7",
+			params: [
+				{ id: "reasoning_effort", value: "high" },
+				{ id: "fast", value: "false" },
+			],
+		};
+		expect(sdk.create.mock.calls[0]?.[0].model).toEqual(selection);
+		expect(send.mock.calls[0]?.[1]).toEqual({ model: selection, onDelta: expect.any(Function) });
+	});
+
 	it("maps a text delta onto the assistant message", async () => {
 		sdk.create.mockResolvedValue({
 			send: vi.fn(async (_text: string, options: { onDelta: (args: { update: { type: "text-delta"; text: string } | { type: "model-call-completed"; modelCallId: string; usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number } } }) => void }) => {
@@ -307,6 +338,47 @@ describe("streamCursor", () => {
 		expect(message.usage.output).toBe(20);
 		expect(message.usage.cacheRead).toBe(500);
 		expect(message.usage.cost.total).toBe(0.5);
+		expect(message.usage.cost.totalFromProvider).toBe(true);
+	});
+
+	it("estimates catalog cost when Cursor billing is unavailable", async () => {
+		const grok = {
+			...model,
+			id: "grok-4.6",
+			cost: { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+		};
+		sdk.create.mockResolvedValue({
+			send: vi.fn(async (_text: string, options: { onDelta: (args: { update: { type: "text-delta"; text: string } | { type: "model-call-completed"; modelCallId: string; usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; reasoningTokens?: number } } }) => void }) => {
+				options.onDelta({
+					update: {
+						type: "model-call-completed",
+						modelCallId: "call-1",
+						usage: { inputTokens: 3347, outputTokens: 17, cacheReadTokens: 1280, cacheWriteTokens: 0, reasoningTokens: 16 },
+					},
+				});
+				options.onDelta({ update: { type: "text-delta", text: "pong" } });
+				return {
+					wait: async () => ({ status: "finished", result: "pong" }),
+					cancel: async () => undefined,
+				};
+			}),
+			getUsage: async () => {
+				throw new Error("[feature_unavailable] This feature is not available for your account");
+			},
+			[Symbol.asyncDispose]: async () => undefined,
+		});
+
+		const message = await streamCursor(grok, transcript([
+			{ role: "user", content: "ping", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+
+		const total = (2 * 2067 + 6 * 17 + 0.5 * 1280) / 1_000_000;
+		expect(message.stopReason).toBe("stop");
+		expect(message.usage.input).toBe(2067);
+		expect(message.usage.cacheRead).toBe(1280);
+		expect(message.usage.output).toBe(17);
+		expect(message.usage.cost.total).toBeCloseTo(total, 10);
+		expect(message.usage.cost.totalFromProvider).not.toBe(true);
 	});
 
 	it("removes the turn store and reports the response", async () => {
