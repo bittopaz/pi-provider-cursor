@@ -38,8 +38,8 @@ const CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
 	"grok-4.5": 256_000,
 	"grok-4.6": 256_000,
 	"grok-4.7": 500_000,
-	"kimi-k2.7-code": 200_000,
-	"kimi-k3": 200_000,
+	"kimi-k2.7-code": 262_144,
+	"kimi-k3": 1_048_576,
 };
 
 type CursorCatalogModel = {

@@ -20,7 +20,7 @@ Preconditions:
 - Doctor has a credential. The saved-catalog path also needs `catalog=remembered` from prepare.
 
 - **Print the table.** Run `.agents/skills/verify/verify.sh models`. The command exits 0 and writes `evidence/models.txt`. The header begins with `provider` and `model`. Every data row has provider `cursor`, max-out `16.4K`, and images `yes`.
-- **Saved catalog.** When prepare printed `catalog=remembered`, the table has more than one row, `grok-4.6` is `256K` with thinking `yes`, and any of these ids use the context in this list: `composer-2.5`, `default`, `glm-5.2`, `kimi-k2.7-code`, and `kimi-k3` are `200K`; `grok-4.5` and `grok-4.6` are `256K`; `grok-4.7` is `500K`; `glm-5p3` and `glm-5p3-flash` are `1M`; `deepseek-v41-flash-1017` is `1.0M`.
+- **Saved catalog.** When prepare printed `catalog=remembered`, the table has more than one row, `grok-4.6` is `256K` with thinking `yes`, and any of these ids use the context in this list: `composer-2.5`, `default`, and `glm-5.2` are `200K`; `grok-4.5` and `grok-4.6` are `256K`; `kimi-k2.7-code` is `262.1K`; `grok-4.7` is `500K`; `glm-5p3` and `glm-5p3-flash` are `1M`; `deepseek-v41-flash-1017` and `kimi-k3` are `1.0M`.
 - **Fallback.** When prepare printed `catalog=fallback`, the only data row is `cursor grok-4.6 256K 16.4K no yes`.
 - **Proof.** `evidence/doctor.txt` contains `auth api_key` and the same `models=` summary as the table assertion.
 

@@ -159,8 +159,8 @@ describe("loadCursorModels", () => {
 			["grok-4.5", "256K", "yes"],
 			["grok-4.6", "256K", "yes"],
 			["grok-4.7", "500K", "yes"],
-			["kimi-k2.7-code", "200K", "no"],
-			["kimi-k3", "200K", "yes"],
+			["kimi-k2.7-code", "262.1K", "no"],
+			["kimi-k3", "1.0M", "yes"],
 		] as const;
 		const rows = catalog.map((item) => {
 			const model = cursorModelFromListItem(item);
