@@ -318,4 +318,17 @@ describe("loadCursorModels", () => {
 		await loadCursorModels("test-key", dir);
 		expect(rememberedCursorModels("test-key", dir).map((item) => item.id)).toEqual([FALLBACK_CURSOR_MODEL_ID]);
 	});
+
+	it("returns the cached catalog when a later list fails", async () => {
+		const dir = tempDir();
+		sdk.list.mockResolvedValue([
+			{ id: "glm-5p3", displayName: "GLM 5.3" },
+			{ id: "grok-4.7", displayName: "Grok 4.7" },
+		]);
+		await loadCursorModels("test-key", dir);
+
+		sdk.list.mockRejectedValue(new Error("offline"));
+		const models = await loadCursorModels("test-key", dir);
+		expect(models.map((item) => item.id)).toEqual(["glm-5p3", "grok-4.7"]);
+	});
 });

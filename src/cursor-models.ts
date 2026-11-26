@@ -196,6 +196,10 @@ export async function loadCursorModels(
 		if (rememberTo) writeCachedCursorModels(apiKey, models, rememberTo);
 		return models.map((item) => cursorModelFromListItem(item));
 	} catch {
+		if (rememberTo) {
+			const cached = readCachedCursorModels(apiKey, rememberTo);
+			if (cached) return cached.map((item) => cursorModelFromListItem(item));
+		}
 		return [fallbackCursorModel()];
 	}
 }
