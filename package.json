@@ -33,6 +33,13 @@
     "CHANGELOG.md"
   ],
   "type": "module",
+  "exports": {
+    "." : "./dist/index.js",
+    "./side-request": {
+      "types": "./src/cursor-side-request.ts",
+      "default": "./dist/cursor-side-request.js"
+    }
+  },
   "engines": {
     "node": ">=24.22.3 <25 || >=26.13.1"
   },
