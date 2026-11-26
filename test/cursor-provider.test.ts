@@ -494,6 +494,87 @@ describe("streamCursor", () => {
 		expect(String(send.mock.calls[1]?.[0])).not.toContain("first turn");
 	});
 
+	it("sends a shorter branch on a new agent", async () => {
+		const send = vi.fn(async (_text: string) => ({
+			wait: async () => ({ status: "finished" as const, result: "ok" }),
+			cancel: async () => undefined,
+		}));
+		finishedAgent(send);
+
+		const side = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+			assistant("ack"),
+			{ role: "user", content: "side question", timestamp: 2 },
+			assistant("side answer"),
+		]), { apiKey: "test-key" }).result();
+		const branched = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+			assistant("ack"),
+			{ role: "user", content: "the page is blank", timestamp: 3 },
+		]), { apiKey: "test-key" }).result();
+
+		expect(side.stopReason).toBe("stop");
+		expect(branched.stopReason).toBe("stop");
+		expect(branched.errorMessage).toBeUndefined();
+		expect(sdk.create).toHaveBeenCalledTimes(2);
+		const resent = String(send.mock.calls[1]?.[0]);
+		expect(resent).toContain("first turn");
+		expect(resent).toContain("the page is blank");
+		expect(resent).not.toContain("side question");
+	});
+
+	it("sends a changed earlier turn on a new agent", async () => {
+		const send = vi.fn(async (_text: string) => ({
+			wait: async () => ({ status: "finished" as const, result: "ok" }),
+			cancel: async () => undefined,
+		}));
+		finishedAgent(send);
+
+		const first = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+			assistant("ack"),
+			{ role: "user", content: "side question", timestamp: 2 },
+		]), { apiKey: "test-key" }).result();
+		const edited = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+			assistant("ack"),
+			{ role: "user", content: "edited question", timestamp: 2 },
+			assistant("edited answer"),
+			{ role: "user", content: "follow up", timestamp: 4 },
+		]), { apiKey: "test-key" }).result();
+
+		expect(first.stopReason).toBe("stop");
+		expect(edited.stopReason).toBe("stop");
+		expect(edited.errorMessage).toBeUndefined();
+		expect(sdk.create).toHaveBeenCalledTimes(2);
+		const resent = String(send.mock.calls[1]?.[0]);
+		expect(resent).toContain("edited question");
+		expect(resent).toContain("follow up");
+		expect(resent).not.toContain("side question");
+	});
+
+	it("reports no new user text when a continuation adds none", async () => {
+		const send = vi.fn(async (_text: string) => ({
+			wait: async () => ({ status: "finished" as const, result: "ok" }),
+			cancel: async () => undefined,
+		}));
+		finishedAgent(send);
+
+		const first = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+		]), { apiKey: "test-key" }).result();
+		const again = await streamCursor(model, transcript([
+			{ role: "user", content: "first turn", timestamp: 1 },
+			assistant("ack"),
+		]), { apiKey: "test-key" }).result();
+
+		expect(first.stopReason).toBe("stop");
+		expect(again.stopReason).toBe("error");
+		expect(again.errorMessage).toBe("Cursor has no new user text.");
+		expect(sdk.create).toHaveBeenCalledTimes(1);
+		expect(send).toHaveBeenCalledTimes(1);
+	});
+
 	it("returns the Pi tool call and feeds the result back", async () => {
 		setCursorToolSource(() => [{
 			name: "read",

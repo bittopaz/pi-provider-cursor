@@ -74,6 +74,14 @@ export function cursorPromptImages(messages: readonly Message[]): { data: string
 	return images;
 }
 
+export function cursorMessageMark(message: Message): string {
+	if (message.role === "system") return `system\n${getCurrentSystemPrompt([message])}`;
+	if (message.role === "toolResult") {
+		return `tool\n${message.toolCallId}\n${message.isError ? "error" : "ok"}\n${messageText(message)}`;
+	}
+	return `${message.role}\n${messageText(message)}`;
+}
+
 export function cursorPendingUserText(messages: readonly Message[]): string {
 	const parts: string[] = [];
 	for (const message of messages) {

@@ -32,7 +32,7 @@ import {
 } from "@earendil-works/pi-ai";
 import { cursorModelSelection } from "./cursor-models.js";
 import { withMutedSdkOutput } from "./cursor-output.js";
-import { buildCursorPrompt, cursorPendingUserText, cursorPromptImages } from "./cursor-prompt.js";
+import { buildCursorPrompt, cursorMessageMark, cursorPendingUserText, cursorPromptImages } from "./cursor-prompt.js";
 
 const ABORTED = "Cursor request was aborted.";
 
@@ -66,7 +66,7 @@ type Live = {
 	storeDir: string;
 	key: string;
 	system: string;
-	delivered: number;
+	seen: string[];
 	run?: Run;
 };
 
@@ -128,7 +128,7 @@ export async function runCursorTurn(turn: CursorTurn): Promise<void> {
 			openSink(turn);
 			watch(signal);
 			await turn.options?.onResponse?.({ status: 200, headers: {} }, turn.model);
-			if (live) live.delivered = turn.messages.length;
+			if (live) live.seen = remember(turn.messages);
 			return;
 		}
 
@@ -141,24 +141,28 @@ export async function runCursorTurn(turn: CursorTurn): Promise<void> {
 			}
 		}
 
-		const reuse = live !== undefined && live.key === key && live.system === system;
-		if (!reuse) {
+		const active = live;
+		const continuation = active !== undefined
+			&& active.key === key
+			&& active.system === system
+			&& continues(turn.messages, active.seen);
+		if (!continuation) {
 			await dispose();
 			live = await createLive(turn.apiKey, selection, specs.length > 0, key, system);
 		}
 		const agent = live;
 		if (!agent) return;
 
-		const pending = turn.messages.slice(agent.delivered);
-		const prompt = reuse ? cursorPendingUserText(pending) : buildCursorPrompt(turn.messages);
-		if (reuse && prompt.trim() === "") {
+		const pending = turn.messages.slice(agent.seen.length);
+		const prompt = continuation ? cursorPendingUserText(pending) : buildCursorPrompt(turn.messages);
+		if (continuation && prompt.trim() === "") {
 			fail(turn, "Cursor has no new user text.");
 			return;
 		}
 
 		const replaced = await turn.options?.onPayload?.({ text: prompt }, turn.model);
 		const text = promptText(replaced, prompt);
-		const imageSource = reuse ? pending.filter((message) => message.role === "user") : turn.messages;
+		const imageSource = continuation ? pending.filter((message) => message.role === "user") : turn.messages;
 		const images = cursorPromptImages(imageSource);
 		const message: string | SDKUserMessage = images.length > 0 ? { text, images } : text;
 		const current = openSink(turn);
@@ -170,7 +174,7 @@ export async function runCursorTurn(turn: CursorTurn): Promise<void> {
 			...(specs.length > 0 ? { local: { customTools: customTools(specs, signal) } } : {}),
 		}));
 		agent.run = sent;
-		agent.delivered = turn.messages.length;
+		agent.seen = remember(turn.messages);
 		if (signal?.aborted) {
 			await sent.cancel().catch(() => undefined);
 			finishAborted(current);
@@ -456,7 +460,7 @@ async function createLive(
 				settingSources: [],
 			},
 		}));
-		return { agent, storeDir, key, system, delivered: 0 };
+		return { agent, storeDir, key, system, seen: [] };
 	} catch (error) {
 		await rm(storeDir, { recursive: true, force: true }).catch(() => undefined);
 		throw error;
@@ -525,6 +529,19 @@ function finishError(current: Sink, message: string): void {
 	current.partial.errorMessage = message;
 	closeSink(current);
 	current.stream.push({ type: "error", reason: "error", error: current.partial });
+}
+
+function remember(messages: readonly Message[]): string[] {
+	return messages.map(cursorMessageMark);
+}
+
+function continues(messages: readonly Message[], seen: readonly string[]): boolean {
+	if (messages.length < seen.length) return false;
+	for (let index = 0; index < seen.length; index += 1) {
+		const message = messages[index];
+		if (message === undefined || cursorMessageMark(message) !== seen[index]) return false;
+	}
+	return true;
 }
 
 function errorText(error: unknown, scrub: (text: string) => string): string {
