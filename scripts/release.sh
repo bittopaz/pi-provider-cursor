@@ -82,5 +82,14 @@ fi
 echo "== tag =="
 git tag "$tag"
 git push origin "$tag"
+
+echo "== github release =="
+notes="$(awk -v v="$version" '
+	index($0, "## [" v "]") == 1 {found=1; next}
+	found && /^## / {exit}
+	found {print}
+' CHANGELOG.md | sed -e '1{/^$/d;}')"
+gh release create "$tag" -R "$repo" --title "$tag" --notes "$notes" --verify-tag
+
 echo "released $name@$version as $tag"
 echo "install with: pi install git:github.com/$repo@$tag"
