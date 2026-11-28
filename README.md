@@ -71,4 +71,4 @@ With [mise](https://mise.jdx.dev), `mise install` provides the pinned Node. A re
 mise run release 0.0.1
 ```
 
-Write and commit the `CHANGELOG.md` entry for the version first; the task refuses without it. It bumps `package.json`, runs the checks, pushes `main`, waits for CI, smokes the pushed commit through an isolated `pi -e git:` session, and pushes the `v` tag last.
+Write the `## [Unreleased]` entry in `CHANGELOG.md` first; the task refuses when it is empty. It bumps `package.json`, dates the entry, runs the checks, commits `Release v…`, tags, opens a fresh `## [Unreleased]` section, and pushes `main` and the tag. The tag push triggers the release workflow, which reruns the checks on the tag, smokes the tag the way pi installs it, and creates the GitHub Release from the CHANGELOG entry.

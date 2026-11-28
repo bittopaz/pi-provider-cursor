@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Cut a release end to end over git distribution: bump, check, push, wait for
-# CI, smoke the pushed commit through an isolated pi -e git: session, then
-# tag. The tag stays last, after the artifact is proven installable.
+# Cut a release. Local phase: bump, date the Unreleased CHANGELOG section,
+# check, commit "Release v…", tag, open the next Unreleased section, push
+# main and the tag. The tag push triggers the release workflow, which verifies
+# the exact tag and creates the GitHub Release.
 set -euo pipefail
 
 version="${1:-}"
@@ -20,10 +21,6 @@ if [[ -n "$(git status --porcelain)" ]]; then
 	echo "working tree is not clean; commit or stash first" >&2
 	exit 1
 fi
-if ! grep -q "^## \[$version\]" CHANGELOG.md; then
-	echo "CHANGELOG.md has no '## [$version]' entry; write and commit it first" >&2
-	exit 1
-fi
 if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
 	echo "tag $tag already exists" >&2
 	exit 1
@@ -33,63 +30,44 @@ if ! git merge-base --is-ancestor origin/main HEAD; then
 	echo "main is behind origin/main; rebase first" >&2
 	exit 1
 fi
+if ! awk '
+	/^## \[Unreleased\]/ {found=1; next}
+	found && /^## / {exit}
+	found && NF {content=1}
+	END {exit !content}
+' CHANGELOG.md; then
+	echo "CHANGELOG.md has no '## [Unreleased]' entry with content; write and commit it first" >&2
+	exit 1
+fi
 gh auth status >/dev/null 2>&1 || { echo "gh is not authenticated" >&2; exit 1; }
 
-if [[ "$(node -p 'require("./package.json").version')" != "$version" ]]; then
-	echo "== bump to $version =="
-	npm version "$version" --no-git-tag-version
-fi
+echo "== bump to $version =="
+npm version "$version" --no-git-tag-version
+date="$(date -u +%Y-%m-%d)"
+awk -v heading="## [$version] - $date" '
+	!done && /^## \[Unreleased\]/ {print heading; done=1; next}
+	{print}
+' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
 
 echo "== checks =="
 npm test
 npm run typecheck
 npm run build
 
-if [[ -n "$(git status --porcelain)" ]]; then
-	git add package.json package-lock.json
-	command git commit -m "Release $version"
-fi
-git push origin main
-sha="$(git rev-parse HEAD)"
-
-echo "== wait for CI on $sha =="
-run_id=""
-for _ in $(seq 1 20); do
-	run_id="$(gh run list --workflow=ci.yml --commit "$sha" --limit 1 -R "$repo" --json databaseId --jq '.[0].databaseId // empty')"
-	[[ -n "$run_id" ]] && break
-	sleep 3
-done
-if [[ -z "$run_id" ]]; then
-	echo "no CI run appeared for $sha" >&2
-	exit 1
-fi
-gh run watch "$run_id" --exit-status --interval 15 -R "$repo"
-
-echo "== smoke pi -e git:github.com/$repo@$sha =="
-smoke_dir="$(mktemp -d)"
-trap 'rm -rf "$smoke_dir"' EXIT
-if [[ ! -f "$HOME/.pi/agent/auth.json" ]]; then
-	echo "smoke needs $HOME/.pi/agent/auth.json; pi hides providers that have no credential" >&2
-	exit 1
-fi
-cp "$HOME/.pi/agent/auth.json" "$smoke_dir/"
-if ! out="$(PI_CODING_AGENT_DIR="$smoke_dir" PI_SKIP_VERSION_CHECK=1 pi -e "git:github.com/$repo@$sha" --list-models cursor/ 2>&1)" || ! grep -q 'grok-4.6' <<<"$out"; then
-	echo "smoke failed: git install of $sha did not list the cursor provider" >&2
-	echo "$out" | tail -20 >&2
-	exit 1
-fi
-
-echo "== tag =="
+git add package.json package-lock.json CHANGELOG.md
+command git commit -m "Release $tag"
 git tag "$tag"
-git push origin "$tag"
 
-echo "== github release =="
-notes="$(awk -v v="$version" '
-	index($0, "## [" v "]") == 1 {found=1; next}
-	found && /^## / {exit}
-	found {print}
-' CHANGELOG.md | sed -e '1{/^$/d;}')"
-gh release create "$tag" -R "$repo" --title "$tag" --notes "$notes" --verify-tag
+echo "== open the next cycle =="
+awk '
+	!done && /^## \[/ {print "## [Unreleased]"; print ""; done=1}
+	{print}
+' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+git add CHANGELOG.md
+command git commit -m "Add [Unreleased] section for next cycle"
+
+git push origin main "$tag"
 
 echo "released $name@$version as $tag"
+echo "the tag-triggered release workflow verifies the tag and creates the GitHub Release"
 echo "install with: pi install git:github.com/$repo@$tag"
