@@ -63,4 +63,4 @@ npm run typecheck
 npm run build
 ```
 
-Node 24.22.3 or newer on the 24 line, or Node 26.13.1 or newer. The Cursor SDK dependency is `@cursor/sdk` 1.4.1.
+Node 24.22.3 or newer on the 24 line, or Node 26.13.1 or newer. The Cursor SDK dependency is `@cursor/sdk` 1.5.0.

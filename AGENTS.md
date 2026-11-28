@@ -4,7 +4,7 @@ This package is a Pi extension. It registers the `cursor` provider, lists models
 
 ## Contract
 
-- `@cursor/sdk` is 1.4.1. Read the installed types before changing `Agent.create`, `agent.send`, `tools`, or `Cursor.models.list`.
+- `@cursor/sdk` is 1.5.0. Read the installed types before changing `Agent.create`, `agent.send`, `tools`, or `Cursor.models.list`.
 - Local agents only. `local.fs` is `emptyFs()`, so the host workspace is not attached. `local.settingSources` is `[]`, so Cursor rules, plugins, and Cursor MCP config stay unloaded.
 - When Pi has any active tools, `tools` is `["mcp"]` and that send passes every active Pi tool as `local.customTools`, extension tools such as `agent` included. With no active tools, `tools` is `[]`. A custom tool call returns to Pi as `toolUse`. Pi runs the tool. The next provider call resolves the parked call with the tool result. Escape rejects the parked call and cancels the run.
 - One agent stays for a linear transcript. The first send is the transcript. Later sends are the new user text. A shorter transcript, or one whose earlier turns differ, disposes that agent and sends the transcript again. A replay writes each past tool call as "The <name> tool already ran with <arguments>." Do not write `[tool name]` lines. Dispose the agent on shutdown, abort, or a failed run.
