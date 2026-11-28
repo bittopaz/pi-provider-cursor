@@ -1,6 +1,6 @@
 {
   "name": "pi-provider-cursor",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Pi provider for Cursor models: lists them, streams replies, and forwards Pi's tools",
   "author": "Xiaoyu Zhong (https://github.com/bittopaz)",
   "license": "MIT",
@@ -48,7 +48,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cursor/sdk": "1.5.0"
+    "@cursor/sdk": "1.5.0",
+    "zod": "4.6.6"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
