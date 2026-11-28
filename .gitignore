@@ -13,6 +13,9 @@ recording/
 demo-script.md
 docs/public-demo-script.md
 
+# pstack generates these audit files
+.audit/
+
 # Debug Mode local/runtime logs (do not commit)
 .debug/
 
