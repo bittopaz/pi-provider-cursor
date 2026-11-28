@@ -68,6 +68,11 @@ gh run watch "$run_id" --exit-status --interval 15 -R "$repo"
 echo "== smoke pi -e git:github.com/$repo@$sha =="
 smoke_dir="$(mktemp -d)"
 trap 'rm -rf "$smoke_dir"' EXIT
+if [[ ! -f "$HOME/.pi/agent/auth.json" ]]; then
+	echo "smoke needs $HOME/.pi/agent/auth.json; pi hides providers that have no credential" >&2
+	exit 1
+fi
+cp "$HOME/.pi/agent/auth.json" "$smoke_dir/"
 if ! out="$(PI_CODING_AGENT_DIR="$smoke_dir" PI_SKIP_VERSION_CHECK=1 pi -e "git:github.com/$repo@$sha" --list-models cursor/ 2>&1)" || ! grep -q 'grok-4.6' <<<"$out"; then
 	echo "smoke failed: git install of $sha did not list the cursor provider" >&2
 	echo "$out" | tail -20 >&2
