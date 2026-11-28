@@ -36,6 +36,11 @@ jobs:
       RENOVATE_REPOSITORIES: ${{ github.repository }}
       RENOVATE_DRY_RUN: full
       LOG_LEVEL: info
+    # A "Cannot access vulnerability alerts" warning from this job is a
+    # GITHUB_TOKEN limitation, not a config problem: the token cannot read
+    # Dependabot alerts through the API Renovate uses. The hosted Renovate
+    # app carries its own alerts permission and is unaffected.
+    steps:
     steps:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
