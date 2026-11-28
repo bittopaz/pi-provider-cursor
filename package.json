@@ -1,8 +1,8 @@
 {
   "name": "pi-provider-cursor",
-  "version": "0.5.42",
+  "version": "0.0.0",
   "description": "Pi provider that calls a Cursor model and returns text",
-  "author": "Mitch Fultz (https://github.com/fitchmultz)",
+  "author": "Xiaoyu Zhong (https://github.com/bittopaz)",
   "license": "MIT",
   "keywords": [
     "pi-package",
