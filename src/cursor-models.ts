@@ -17,15 +17,22 @@ const FALLBACK_CONTEXT_WINDOW = 128_000;
 const FALLBACK_MAX_TOKENS = 16_384;
 const ZERO_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
 
-// Dollars per million tokens. https://cursor.com/docs/models-and-pricing (2026-11-21).
+// Dollars per million tokens. https://cursor.com/docs/models-and-pricing (2026-11-28).
 // A dash in the cache-write column is 0. Requests send fast=false, so the
 // fast price rows stay unused. grok-4.7 is the 500k row because that is the
-// context value this provider sends.
+// context value this provider sends. Third-party models use their API list
+// price, which Cursor bills from prepaid credit.
 const CATALOG_COST: Readonly<Record<string, typeof ZERO_COST>> = {
 	"composer-2.5": { input: 0.5, output: 2.5, cacheRead: 0.2, cacheWrite: 0 },
+	"deepseek-v41-flash-1017": { input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 },
+	"glm-5.2": { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+	"glm-5p3": { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+	"glm-5p3-flash": { input: 0.15, output: 0.5, cacheRead: 0.029, cacheWrite: 0 },
 	"grok-4.5": { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
 	"grok-4.6": { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
 	"grok-4.7": { input: 4, output: 12, cacheRead: 1, cacheWrite: 0 },
+	"kimi-k2.7-code": { input: 0.95, output: 4, cacheRead: 0.19, cacheWrite: 0 },
+	"kimi-k3": { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 0 },
 };
 
 const CONTEXT_WINDOWS: Readonly<Record<string, number>> = {

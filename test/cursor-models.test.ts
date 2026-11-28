@@ -305,6 +305,42 @@ describe("loadCursorModels", () => {
 			cacheWrite: 0,
 		});
 		expect(cursorModelFromListItem({ id: "kimi-k3", displayName: "Kimi" }).cost).toEqual({
+			input: 3,
+			output: 15,
+			cacheRead: 0.3,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "kimi-k2.7-code", displayName: "Kimi K2.7 Code" }).cost).toEqual({
+			input: 0.95,
+			output: 4,
+			cacheRead: 0.19,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "glm-5p3", displayName: "GLM 5.3" }).cost).toEqual({
+			input: 1.4,
+			output: 4.4,
+			cacheRead: 0.26,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "glm-5p3-flash", displayName: "GLM 5.3 Flash" }).cost).toEqual({
+			input: 0.15,
+			output: 0.5,
+			cacheRead: 0.029,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "glm-5.2", displayName: "GLM 5.2" }).cost).toEqual({
+			input: 1.4,
+			output: 4.4,
+			cacheRead: 0.26,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "deepseek-v41-flash-1017", displayName: "DeepSeek" }).cost).toEqual({
+			input: 0.3,
+			output: 1.2,
+			cacheRead: 0.006,
+			cacheWrite: 0,
+		});
+		expect(cursorModelFromListItem({ id: "unknown-model", displayName: "Unknown" }).cost).toEqual({
 			input: 0,
 			output: 0,
 			cacheRead: 0,
