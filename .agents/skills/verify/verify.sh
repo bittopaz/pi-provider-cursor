@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Isolated Pi print-mode harness for the cursor provider extension.
-# Usage: verify.sh <prepare|doctor|models|reply|thinking|fast|tool|continue|cleanup>
+# Usage: verify.sh <prepare|doctor|models|reply|thinking|fast|tool|toolext|continue|cleanup>
 # Set VERIFY_RUN_ID to share one run across subcommands.
 set -euo pipefail
 umask 077
