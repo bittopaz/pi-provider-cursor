@@ -2,7 +2,7 @@
 
 This project is a fork of [pi-cursor-sdk](https://github.com/fitchmultz/pi-cursor-sdk), renamed to pi-provider-cursor.
 
-Pi provider that calls a Cursor model and returns the text.
+Pi provider for Cursor models. It lists models from `Cursor.models.list`, keeps one local Cursor agent for the session and streams its replies, forwards Pi's active tools to the model, and maps Pi thinking levels onto each model's reasoning parameter.
 
 ## Install
 

@@ -1,7 +1,7 @@
 {
   "name": "pi-provider-cursor",
   "version": "0.0.0",
-  "description": "Pi provider that calls a Cursor model and returns text",
+  "description": "Pi provider for Cursor models: lists them, streams replies, and forwards Pi's tools",
   "author": "Xiaoyu Zhong (https://github.com/bittopaz)",
   "license": "MIT",
   "keywords": [
