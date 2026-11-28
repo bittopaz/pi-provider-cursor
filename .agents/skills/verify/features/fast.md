@@ -26,6 +26,6 @@ Preconditions:
 ## Gotchas
 
 - Pi's reply does not include the `fast` parameter. The provider deletes the SDK store when the agent is disposed. The harness copies `runs.ndjson` while that process is still running.
-- `grok-4.6`, `grok-4.5`, `grok-4.7`, and `composer-2.5` list `fast` in the saved catalog, and the catalog default is `fast=true`. Leaving the parameter out selects that default. This drive checks `grok-4.6` only.
+- `grok-4.6`, `grok-4.5`, `grok-4.7`, and `composer-2.5` list `fast` in the saved catalog. The provider sends `fast=false` explicitly, so the catalog's default value never applies to these requests. This drive checks `grok-4.6` only.
 - A model with no `fast` parameter is not this feature.
 - This drive is a billed completion. Do not run it after a drive whose reported cost already exceeded $5.

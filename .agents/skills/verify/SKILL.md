@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Drive pi-provider-cursor through an isolated Pi print session and prove Cursor model listing, replies, thinking, fast off, tool use, and a second turn. Use when verifying this extension's user-facing provider behavior.
+description: Drive pi-provider-cursor through an isolated Pi print session and prove Cursor model listing, replies, thinking, fast off, tool use, a second turn, and a side-request completion. Use when verifying this extension's user-facing provider behavior.
 ---
 
 # Verify pi-provider-cursor
@@ -60,6 +60,7 @@ The short system prompt, disabled tools (unless the feature enables one), and sk
 | Read a file | `verify.sh tool` |
 | Extension tool | `verify.sh toolext` |
 | Second turn | `verify.sh continue` |
+| Side completion | `verify.sh sidereq` |
 
 Recipes and pass conditions are in [features/](features/README.md). Drive one feature per invocation. A feature whose precondition is unmet exits 2 and names the gap; do not count another feature as a substitute.
 
@@ -74,6 +75,7 @@ Proof is written under `/tmp/pi-cursor-verify/$VERIFY_RUN_ID/evidence/`:
 - `<feature>/stderr.txt` for Pi's stderr.
 - `<feature>/meta.txt` for the exit code and the assertion summary, including cost when Pi reports it.
 - `fast/store/<id>/runs.ndjson` for the SDK model selection copied while the fast drive is still running.
+- `side-request/result.json` for the side completion's result and leftover store list. There is no Pi JSONL stream for this feature; the driver calls the export directly.
 
 Pass for a completion feature requires all of:
 
@@ -109,4 +111,4 @@ export VERIFY_RUN_ID="verify-$(date +%Y%m%dT%H%M%S)"
 test -s "/tmp/pi-cursor-verify/${VERIFY_RUN_ID}/evidence/reply/events.jsonl"
 ```
 
-Subcommands: `prepare`, `doctor`, `models`, `reply`, `thinking`, `fast`, `tool`, `toolext`, `continue`, `cleanup`.
+Subcommands: `prepare`, `doctor`, `models`, `reply`, `thinking`, `fast`, `tool`, `toolext`, `continue`, `sidereq`, `cleanup`.

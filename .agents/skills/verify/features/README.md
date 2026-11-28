@@ -38,3 +38,4 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 - [Keep fast off](./fast.md) covers `fast=false` on `cursor/grok-4.6` when the saved catalog lists that value.
 - [Call a Pi tool through Cursor](./tool.md) covers a `read` tool call against a scratch file and a `fixture_marker` call registered by a second extension, proving every active Pi tool reaches Cursor.
 - [Send a second message](./continue.md) covers two prompts in one Pi process.
+- [Ask for a side completion](./side-request.md) covers one prompt through the `./side-request` export and its temporary store cleanup.

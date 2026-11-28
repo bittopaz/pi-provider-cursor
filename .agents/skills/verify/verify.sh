@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Isolated Pi print-mode harness for the cursor provider extension.
-# Usage: verify.sh <prepare|doctor|models|reply|thinking|fast|tool|toolext|continue|cleanup>
+# Usage: verify.sh <prepare|doctor|models|reply|thinking|fast|tool|toolext|continue|sidereq|cleanup>
 # Set VERIFY_RUN_ID to share one run across subcommands.
 set -euo pipefail
 umask 077
@@ -32,7 +32,7 @@ PI_COMMON=(
 )
 
 usage() {
-  echo "Usage: VERIFY_RUN_ID=<id> $0 <prepare|doctor|models|reply|thinking|fast|tool|toolext|continue|cleanup>" >&2
+  echo "Usage: VERIFY_RUN_ID=<id> $0 <prepare|doctor|models|reply|thinking|fast|tool|toolext|continue|sidereq|cleanup>" >&2
   exit 2
 }
 
@@ -584,6 +584,40 @@ PY
   assert_reply "$out" "grok-4.6" "amber" | tee -a "$EVIDENCE_DIR/continue/meta.txt"
 }
 
+sidereq() {
+  load_env
+  doctor >/dev/null
+  local out="$EVIDENCE_DIR/side-request/result.json"
+  local err="$EVIDENCE_DIR/side-request/stderr.txt"
+  local status=0
+  run_pi "$out" "$err" \
+    node "$ROOT/.agents/skills/verify/side-request-driver.mjs" "$ROOT" || status=$?
+  echo "exit=$status" | tee "$EVIDENCE_DIR/side-request/meta.txt"
+  if [[ "$status" -ne 0 ]]; then
+    cat "$err" >&2
+    exit "$status"
+  fi
+  python3 - "$out" <<'PY' | tee -a "$EVIDENCE_DIR/side-request/meta.txt"
+import json, sys
+lines = [line for line in open(sys.argv[1]) if line.strip()]
+if not lines:
+    raise SystemExit("driver wrote no output")
+record = json.loads(lines[-1])
+result = record.get("result") or {}
+if result.get("stopReason") != "stop":
+    raise SystemExit(f"stopReason {result.get('stopReason')}: {result.get('errorMessage')}")
+text = (result.get("text") or "").strip()
+if "pong" not in text.lower():
+    raise SystemExit(f"reply missing 'pong': {text!r}")
+if len(text) > 200:
+    raise SystemExit(f"reply longer than 200 characters: {text!r}")
+leftover = record.get("leftover") or []
+if leftover:
+    raise SystemExit(f"side store not removed: {leftover}")
+print(f"stop=stop leftover=0 text={text}")
+PY
+}
+
 cleanup() {
   if [[ -f "$RUN_DIR/pi.pid" ]]; then
     local pid
@@ -609,6 +643,7 @@ case "$cmd" in
   tool) tool ;;
   toolext) toolext ;;
   continue) continue_run ;;
+  sidereq) sidereq ;;
   cleanup) cleanup ;;
   *) usage ;;
 esac
