@@ -2,7 +2,8 @@
 # Cut a release. Local phase: bump, date the Unreleased CHANGELOG section,
 # check, commit "Release v…", tag, open the next Unreleased section, push
 # main and the tag. The tag push triggers the release workflow, which verifies
-# the exact tag and creates the GitHub Release.
+# the exact tag and creates the GitHub Release; the script watches that run and
+# exits non-zero unless it goes green.
 set -euo pipefail
 
 version="${1:-}"
@@ -68,6 +69,22 @@ command git commit -m "Add [Unreleased] section for next cycle"
 
 git push origin main "$tag"
 
+echo "== verify the tag in CI =="
+run_id=""
+for _ in $(seq 1 20); do
+	run_id="$(gh run list --workflow=release.yml --branch "$tag" --limit 1 -R "$repo" --json databaseId --jq '.[0].databaseId // empty')"
+	[[ -n "$run_id" ]] && break
+	sleep 3
+done
+if [[ -z "$run_id" ]]; then
+	echo "no release workflow run appeared for $tag" >&2
+	exit 1
+fi
+if ! gh run watch "$run_id" --exit-status --interval 15 -R "$repo"; then
+	echo "release workflow failed; tag $tag is public but the GitHub Release is missing" >&2
+	exit 1
+fi
+
 echo "released $name@$version as $tag"
-echo "the tag-triggered release workflow verifies the tag and creates the GitHub Release"
+echo "https://github.com/$repo/releases/tag/$tag"
 echo "install with: pi install git:github.com/$repo@$tag"
