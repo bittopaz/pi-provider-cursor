@@ -1,5 +1,7 @@
 # Changelog
 
+## [Unreleased]
+
 ## [0.0.2] - 2026-11-28
 
 Third-party models report an estimated per-turn cost: Kimi, GLM, and DeepSeek models are priced at the API list prices Cursor publishes, instead of falling back to $0.
