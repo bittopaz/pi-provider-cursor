@@ -7,10 +7,10 @@ Pi provider for Cursor models. It lists models from `Cursor.models.list`, keeps 
 ## Install
 
 ```sh
-pi install npm:pi-provider-cursor
+pi install git:github.com/bittopaz/pi-provider-cursor
 ```
 
-For a one-off run, `pi -e npm:pi-provider-cursor` loads it without installing. To work on a checkout, run `pi -e .` from the repo root.
+For a one-off run, `pi -e git:github.com/bittopaz/pi-provider-cursor` loads it without installing. Append `@v0.0.1` or another ref to pin a release. To work on a checkout, run `pi -e .` from the repo root.
 
 Set `CURSOR_API_KEY`, or run `/login` and choose Cursor. Then select a `cursor/` model:
 
@@ -64,3 +64,11 @@ npm run build
 ```
 
 Node 24.22.3 or newer on the 24 line, or Node 26.13.1 or newer. The Cursor SDK dependency is `@cursor/sdk` 1.5.0.
+
+With [mise](https://mise.jdx.dev), `mise install` provides the pinned Node. A release is one command:
+
+```sh
+mise run release 0.0.1
+```
+
+Write and commit the `CHANGELOG.md` entry for the version first; the task refuses without it. It bumps `package.json`, runs the checks, pushes `main`, waits for CI, smokes the pushed commit through an isolated `pi -e git:` session, and pushes the `v` tag last.

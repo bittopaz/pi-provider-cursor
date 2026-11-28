@@ -1,0 +1,9 @@
+[tools]
+node = "24.22.3"
+
+[tasks.release]
+description = "Cut a release: bump, check, push, publish through GitHub Actions, tag last"
+usage = '''
+arg "<version>" help="release version, for example 0.0.1"
+'''
+run = 'bash scripts/release.sh "$usage_version"'
