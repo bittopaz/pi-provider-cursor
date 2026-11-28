@@ -21,7 +21,7 @@ Preconditions:
 - **Send both prompts.** Run `.agents/skills/verify/verify.sh continue`. The command exits 0.
 - **See both user messages.** `evidence/continue/events.jsonl` records `The code word is amber.` and then `Reply with the code word only.` as user messages, in that order.
 - **See the second reply.** There are two assistant replies. The second assistant text contains `amber`. The last assistant `message_end` has provider `cursor`, model `grok-4.6`, `stopReason` `stop`, and the last `agent_settled` has `aborted` false.
-- **See reuse, not replay.** The second turn's `usage` has a smaller `input` than the first turn's and a nonzero `cacheRead`. A transcript replay would send the whole exchange again and show the large `input` a second time. Without this check, the feature would also pass when the provider silently re-sends the full transcript.
+- **See reuse, not replay.** The second turn's `usage` has a smaller `input` than the first turn's and a nonzero `cacheRead`. A transcript replay would send the whole exchange again and show the large `input` a second time. Without this check, the feature would also pass when the provider silently re-sends the full transcript. The drive also prints the second turn's prompt-cache hit rate (`cacheRead / (cacheRead + input)`) as `hit=<pct>` in `meta.txt`. The rate is informational, not asserted: the fixture prompt is small, so the percentage moves with how much of the shared prefix is already warm server-side.
 
 ## Gotchas
 

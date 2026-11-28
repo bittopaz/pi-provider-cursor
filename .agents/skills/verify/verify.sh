@@ -537,7 +537,7 @@ continue_run() {
     cat "$err" >&2
     exit "$status"
   fi
-  python3 - "$out" <<'PY'
+  python3 - "$out" <<'PY' | tee -a "$EVIDENCE_DIR/continue/meta.txt"
 import json, sys
 rows = [json.loads(line) for line in open(sys.argv[1]) if line.strip()]
 def user_text(message):
@@ -579,7 +579,11 @@ if not (second_in < first_in and second_cache > 0):
         f"second turn usage does not show agent reuse: "
         f"first input={first_in}, second input={second_in}, cacheRead={second_cache}"
     )
-print(f"users=2 second-text-has=amber reuse=input:{second_in}<{first_in} cacheRead={second_cache}")
+hit = second_cache / (second_cache + second_in) * 100 if second_cache + second_in else 0
+print(
+    f"users=2 second-text-has=amber reuse=input:{second_in}<{first_in} "
+    f"cacheRead={second_cache} hit={hit:.1f}%"
+)
 PY
   assert_reply "$out" "grok-4.6" "amber" | tee -a "$EVIDENCE_DIR/continue/meta.txt"
 }
